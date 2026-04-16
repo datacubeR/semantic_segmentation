@@ -1,0 +1,13 @@
+Dataset_Templado
+.venv
+GeoNRW
+GID15
+train
+*.zip
+LandCoverAI
+data
+Vaihingen
+DeepGlobal
+Potsdam_dataset
+Vaihingen_dataset
+__pycache__
