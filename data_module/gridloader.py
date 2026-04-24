@@ -3,11 +3,11 @@ from torch.utils.data import DataLoader
 
 
 class GridLoader:
-    def __init__(self, subjects, patch_size, overlap, dl_kwargs):
+    def __init__(self, subjects, patch_size, overlap, loader_kwargs):
         self.subjects = subjects
         self.patch_size = patch_size
         self.overlap = overlap
-        self.dl_kwargs = dl_kwargs
+        self.loader_kwargs = loader_kwargs
 
     def __iter__(self):
         for subject in self.subjects:

@@ -8,17 +8,25 @@ from data_module import GridDataModule, PotsdamVaihingen
 warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
 
 
-potsdam_image_glob = "Potsdam_dataset/2_Ortho_RGB/*.tif"
-potsdam_mask_glob = "Potsdam_dataset/5_Labels_all/*.tif"
+train_potsdam_image_glob = "Potsdam_dataset/train/images/*.tif"
+train_potsdam_mask_glob = "Potsdam_dataset/train/masks/*.tif"
+
+val_potsdam_image_glob = "Potsdam_dataset/val/images/*.tif"
+val_potsdam_mask_glob = "Potsdam_dataset/val/masks/*.tif"
 
 dm = GridDataModule(
     dataset_cls=PotsdamVaihingen,
-    dataset_kwargs={
-        "image_glob": potsdam_image_glob,
-        "mask_glob": potsdam_mask_glob,
-        "to_rgb": True,
+    train_dataset_kwargs={
+        "image_glob": train_potsdam_image_glob,
+        "mask_glob": train_potsdam_mask_glob,
+        "reduce_mask": True,
     },
-    dl_kwargs={
+    val_dataset_kwargs={
+        "image_glob": val_potsdam_image_glob,
+        "mask_glob": val_potsdam_mask_glob,
+        "reduce_mask": True,
+    },
+    loader_kwargs={
         "batch_size": 16,
         "num_workers": 0,
     },

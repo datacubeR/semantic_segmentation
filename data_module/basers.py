@@ -8,11 +8,11 @@ from .basevision import BaseVisionDataset
 
 
 class BaseRSDataset(BaseVisionDataset):
-    def __init__(self, image_glob, mask_glob, to_rgb=False, transform=None):
+    def __init__(self, image_glob, mask_glob, reduce_mask=False, transform=None):
         self.image_paths = sorted(glob.glob(image_glob))
         self.mask_paths = sorted(glob.glob(mask_glob))
         self.transform = transform
-        self.to_rgb = to_rgb
+        self.reduce_mask = reduce_mask
 
     def __len__(self):
         return len(self.image_paths)
@@ -26,7 +26,7 @@ class BaseRSDataset(BaseVisionDataset):
             image = img.read()
         with rasterio.open(mask_path) as msk:
             # HWC for conversion
-            if self.to_rgb:
+            if self.reduce_mask:
                 mask = self._rgb_to_mask(msk.read().transpose(1, 2, 0))
             else:
                 mask = msk.read().squeeze()
