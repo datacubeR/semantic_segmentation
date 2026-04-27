@@ -3,7 +3,7 @@ import warnings
 import torchio as tio
 from rasterio.errors import NotGeoreferencedWarning
 
-from data_module import GID15, GridDataModule
+from data_classes import GID15, GridDataModule
 
 warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
 

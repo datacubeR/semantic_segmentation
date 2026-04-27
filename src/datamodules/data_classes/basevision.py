@@ -4,14 +4,14 @@ from torch.utils.data import Dataset
 
 class BaseVisionDataset(Dataset):
     def shape(self, idx):
-        img, mask = self[idx]["image"].data, self[idx]["mask"].data
+        img, mask = self[idx]["image"], self[idx]["mask"]
         return img.shape, mask.shape
 
     def plot(self, idx, cmap="viridis", figsize=(10, 5), normalized=False):
 
         img, mask = (
-            self[idx]["image"].data.squeeze(-1),
-            self[idx]["mask"].data.squeeze(-1),
+            self[idx]["image"].squeeze(-1),
+            self[idx]["mask"].squeeze(-1),
         )
         plt.figure(figsize=figsize)
         plt.subplot(1, 2, 1)

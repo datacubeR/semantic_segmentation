@@ -4,6 +4,11 @@ from torch.utils.data import DataLoader
 
 class GridLoader:
     def __init__(self, subjects, patch_size, overlap, loader_kwargs):
+
+        ## Fix cuando trabajo sin Batch Size
+        if isinstance(subjects, tio.Subject):
+            subjects = [subjects]
+        self.subjects = subjects
         self.subjects = subjects
         self.patch_size = patch_size
         self.overlap = overlap
@@ -19,7 +24,7 @@ class GridLoader:
 
             loader = DataLoader(
                 sampler,
-                **self.dl_kwargs,
+                **self.loader_kwargs,
             )
 
             for batch in loader:

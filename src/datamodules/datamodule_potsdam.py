@@ -1,9 +1,8 @@
 import warnings
 
 import torchio as tio
+from data_classes import GridDataModule, PotsdamVaihingen
 from rasterio.errors import NotGeoreferencedWarning
-
-from data_module import GridDataModule, PotsdamVaihingen
 
 warnings.filterwarnings("ignore", category=NotGeoreferencedWarning)
 
@@ -27,13 +26,16 @@ dm = GridDataModule(
         "reduce_mask": True,
     },
     loader_kwargs={
-        "batch_size": 16,
+        "batch_size": 1,
         "num_workers": 0,
     },
 )
-dm.setup()
-train_loader = dm.train_dataloader()
 
-count = 0
-for batch in train_loader:
-    print(batch["image"][tio.DATA].shape, batch["mask"][tio.DATA].shape)
+if __name__ == "__main__":
+    dm.setup()
+    train_loader = dm.train_dataloader()
+
+    count = 0
+    for batch in train_loader:
+        print(batch["image"].shape, batch["mask"].shape)
+        break

@@ -3,6 +3,9 @@ import numpy as np
 import rasterio
 from PIL import Image
 
+## ?: Not sure if this will work when moving away from tio.Subjects.
+## !: Modify Accordingly to use Tensor Data instead of tio.Subjects when needed.
+
 
 def show_image_and_mask_from_tensor(
     data,

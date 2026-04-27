@@ -2,16 +2,14 @@ import glob
 
 import rasterio
 import torch
-import torchio as tio
 
 from .basevision import BaseVisionDataset
 
 
 class BaseRSDataset(BaseVisionDataset):
-    def __init__(self, image_glob, mask_glob, reduce_mask=False, transform=None):
+    def __init__(self, image_glob, mask_glob, reduce_mask=False):
         self.image_paths = sorted(glob.glob(image_glob))
         self.mask_paths = sorted(glob.glob(mask_glob))
-        self.transform = transform
         self.reduce_mask = reduce_mask
 
     def __len__(self):
@@ -31,17 +29,7 @@ class BaseRSDataset(BaseVisionDataset):
             else:
                 mask = msk.read().squeeze()
 
-        # Apply transformations if any
-        if self.transform is not None:
-            augmented = self.transform(image=image, mask=mask)
-            image = augmented["image"]
-            mask = augmented["mask"]
+        img = torch.from_numpy(image).float()
+        mask = torch.from_numpy(mask).unsqueeze(0).float()
 
-        img = torch.from_numpy(image).unsqueeze(-1).float()
-        mask = torch.from_numpy(mask).unsqueeze(-1).unsqueeze(0).float()
-
-        subject = tio.Subject(
-            image=tio.ScalarImage(tensor=img),
-            mask=tio.LabelMap(tensor=mask),
-        )
-        return subject
+        return dict(image=img, mask=mask)

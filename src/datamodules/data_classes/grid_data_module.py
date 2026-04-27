@@ -1,6 +1,5 @@
 import lightning as L
-
-from .gridloader import GridLoader
+from torch.utils.data import DataLoader
 
 
 class GridDataModule(L.LightningDataModule):
@@ -26,17 +25,7 @@ class GridDataModule(L.LightningDataModule):
         self.val_dataset = self.dataset_cls(**self.val_dataset_kwargs)
 
     def train_dataloader(self):
-        return GridLoader(
-            self.train_dataset,
-            patch_size=self.patch_size,
-            overlap=self.overlap,
-            loader_kwargs=self.loader_kwargs,
-        )
+        return DataLoader(self.train_dataset, **self.loader_kwargs)
 
     def val_dataloader(self):
-        return GridLoader(
-            self.val_dataset,
-            patch_size=self.patch_size,
-            overlap=self.overlap,
-            loader_kwargs=self.loader_kwargs,
-        )
+        return DataLoader(self.val_dataset, **self.loader_kwargs)
