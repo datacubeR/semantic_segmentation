@@ -1,4 +1,3 @@
-Dataset_Templado
 .venv
 GeoNRW
 GID15
@@ -12,3 +11,5 @@ Potsdam_dataset
 Vaihingen_dataset
 loveda_dataset
 __pycache__
+DeadTrees
+src/logs
