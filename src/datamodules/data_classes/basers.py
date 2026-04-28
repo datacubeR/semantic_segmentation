@@ -30,6 +30,6 @@ class BaseRSDataset(BaseVisionDataset):
                 mask = msk.read().squeeze()
 
         img = torch.from_numpy(image).float()
-        mask = torch.from_numpy(mask).unsqueeze(0).float()
+        mask = torch.from_numpy(mask).unsqueeze(0).long()  # Masks should be Integers
 
         return dict(image=img, mask=mask)

@@ -7,18 +7,17 @@ from .basers import BaseRSDataset
 
 
 class DeadTrees(BaseRSDataset):
-    def __init__(self, image_glob, white_threshold=0.1, transform=None):
+    def __init__(self, image_glob, mask_glob, white_threshold=0.1):
         self.image_ids = self._detect_non_border_images(
             glob.glob(image_glob), white_threshold
         )
         self.image_paths = [
-            f"Dataset_Templado/dataset_rgb/{img_id}.tif" for img_id in self.image_ids
+            path for path in glob.glob(image_glob) if Path(path).stem in self.image_ids
         ]
         self.mask_paths = [
-            f"Dataset_Templado/dataset_binary/{img_id}.tif" for img_id in self.image_ids
+            path for path in glob.glob(mask_glob) if Path(path).stem in self.image_ids
         ]
-        self.transform = transform
-        self.to_rgb = False
+        self.reduce_mask = False
 
     @staticmethod
     def _detect_non_border_images(image_list, percentage_threshold=0.1):

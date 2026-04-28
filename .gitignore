@@ -13,3 +13,4 @@ loveda_dataset
 __pycache__
 DeadTrees
 src/logs
+src/checkpoints

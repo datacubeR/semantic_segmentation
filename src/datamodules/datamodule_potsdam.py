@@ -1,6 +1,5 @@
 import warnings
 
-import torchio as tio
 from data_classes import GridDataModule, PotsdamVaihingen
 from rasterio.errors import NotGeoreferencedWarning
 
