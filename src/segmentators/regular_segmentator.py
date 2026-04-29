@@ -42,7 +42,7 @@ class RegularTrainingSegmentator(L.LightningModule):
 
         y = y.squeeze(1)  # Remove channel dimension for CE loss
 
-        ## For Dice I need to one-hot encode the target.
+        ## For DiceLoss I need to one-hot encode the target.
         if self.add_channel_dim:
             y_ohe = F.one_hot(y, num_classes=2).permute(0, 3, 1, 2)
             y_ohe = y_ohe.contiguous()
