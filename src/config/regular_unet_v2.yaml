@@ -4,6 +4,7 @@ model_name: regular_unet
 resume: False
 fast_dev_run: False
 overfit_batches: 0
+seed: 42
 
 data:
   train_image_glob: "DeadTrees/train/images/*.tif"
@@ -52,9 +53,12 @@ architecture:
   add_channel_dim: True ## Necessary when using Dice Loss
 
 trainer:
+  n_tb_images: 4
+  tb_size: [128, 128]
   accelerator: gpu
   devices: 1
   batch_size: 16
+  pin_memory: True
   num_workers: 10
   num_epochs: 20
   accumulate_grad_batches: 4

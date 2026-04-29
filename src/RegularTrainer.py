@@ -18,6 +18,9 @@ from .datamodules import data_classes as DM
 from .segmentators import RegularTrainingSegmentator
 
 if __name__ == "__main__":
+    # ============================================================
+    # Argument Parsing and Config Loading
+    # ============================================================
     argparse = argparse.ArgumentParser(description="Model Trainer")
     argparse.add_argument(
         "--config",
@@ -36,6 +39,10 @@ if __name__ == "__main__":
         exit(1)
 
     try:
+        # ============================================================
+        # Project Setup
+        # ============================================================
+        L.seed_everything(config.get("seed", 42), workers=True)
         VERSION = config["version"]
         PROJECT_NAME = config["project_name"]
         MODEL_NAME = config["model_name"]
@@ -51,6 +58,9 @@ if __name__ == "__main__":
         val_deadtrees_image_glob = config["data"]["val_image_glob"]
         val_deadtrees_mask_glob = config["data"]["val_mask_glob"]
 
+        # ============================================================
+        # DataModule
+        # ============================================================
         deadtrees_dm = DM.RegularDataModule(
             dataset_cls=getattr(DM, config["data"]["dataset_cls"]),
             train_dataset_kwargs={
@@ -69,6 +79,9 @@ if __name__ == "__main__":
             },
         )
 
+        # ============================================================
+        # Model Definition
+        # ============================================================
         model = Unet(
             config["model"]["encoder_name"],
             encoder_weights=config["model"]["encoder_weights"],
@@ -76,6 +89,9 @@ if __name__ == "__main__":
             classes=config["model"]["classes"],
         )
 
+        # ============================================================
+        # Augmentation Setup
+        # ============================================================
         if config["augmentation"]["apply"]:
             horizontal_flip = config["augmentation"]["horizontal_flip"]
             vertical_flip = config["augmentation"]["vertical_flip"]
@@ -110,6 +126,9 @@ if __name__ == "__main__":
             else None
         )
 
+        # ============================================================
+        # Lightning Module Setup
+        # ============================================================
         segmentator = RegularTrainingSegmentator(
             model=model,
             criterion=getattr(smpl, config["architecture"]["criterion"])(
@@ -119,17 +138,25 @@ if __name__ == "__main__":
             optimizer_cls=getattr(torch.optim, config["architecture"]["optimizer"]),
             optimizer_kwargs=config["architecture"]["optimizer_kwargs"],
             metric=DiceScore(**config["architecture"]["metrics_kwargs"]),
+            n_tb_images=config["trainer"]["n_tb_images"],
+            tb_size=tuple(config["trainer"]["tb_size"]),
             add_channel_dim=config["architecture"]["add_channel_dim"],
         )
 
+        # ============================================================
+        # Model Checkpointing
+        # ============================================================
         checkpoint_callback = ModelCheckpoint(
             dirpath=f"checkpoints/{PROJECT_NAME}/version_{VERSION}/checkpoints",
-            filename="{epoch:02d}-{step}-{val_dice:.4f}-{val_loss:.4f}",
+            filename="{epoch:02d}-{step}-{val_metric:.4f}-{val_loss:.4f}",
             save_top_k=1,  # keep best 3 models
             monitor="val_metric",  # or "val_loss"
             mode="max",  # IoU → maximize
             save_last=True,  # VERY IMPORTANT for resume
         )
+        # ============================================================
+        # Logger and Trainer Setup
+        # ============================================================
         logger = TensorBoardLogger(
             save_dir="logs", version=VERSION, name=f"{PROJECT_NAME}"
         )
@@ -149,6 +176,9 @@ if __name__ == "__main__":
             accumulate_grad_batches=config["trainer"]["accumulate_grad_batches"],
         )
 
+        # ============================================================
+        # Script Setup and Training Execution
+        # ============================================================
         if config["fast_dev_run"]:
             print(
                 "[bold red] Fast development run enabled. Training run for 1 batch only for Debugging Purposes only. [/bold red]"
