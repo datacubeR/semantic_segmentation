@@ -87,7 +87,7 @@ class RegularTrainingSegmentator(L.LightningModule):
     def on_validation_epoch_end(self):
         miou = self.metric.compute()
         self.log(
-            "val_dice", miou, on_epoch=True, prog_bar=True, batch_size=1, logger=True
+            "val_metric", miou, on_epoch=True, prog_bar=True, batch_size=1, logger=True
         )
         self.metric.reset()
 
