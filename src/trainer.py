@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore")
 # ===========================================
 CHECKPOINT_PATH = None
 MODEL_NAME = "segnet_v1"
-DATASET_NAME = "Vaihingen_HF"
+DATASET_NAME = "Vaihingen"
 PATCH_SIZE = 256
 IN_CHANNELS = 3
 N_CLASSES = 6
@@ -32,8 +32,10 @@ GRAD_ACCUMULATION_BATCHES = 32
 PRECISION = "16-mixed"
 
 
-train_path = f"{DATASET_NAME}/Vaihingen_train_patches-256x256/*"
-val_path = f"{DATASET_NAME}/Vaihingen_validation/*"
+train_path = (
+    f"{DATASET_NAME}_HF/{DATASET_NAME}_train_patches-{PATCH_SIZE}x{PATCH_SIZE}/*"
+)
+val_path = f"{DATASET_NAME}_HF/{DATASET_NAME}_validation/*"
 
 print("[bold magenta]Initializing Model and Data Module...[/bold magenta]")
 
