@@ -12,6 +12,7 @@ Vaihingen_dataset
 loveda_dataset
 __pycache__
 DeadTrees
-logs
+tb_logs
+l_checkpoints
 checkpoints
 *_HF
