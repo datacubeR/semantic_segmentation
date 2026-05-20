@@ -18,6 +18,21 @@ An additional `--test-size` parameter can be used to specify the proportion of t
 
 The splitter will create new folders called `train` and `val`, each containing `images` and `masks` subfolders. The original images and masks will be moved to the corresponding folders.
 
+## HuggingFace Datasets
+
+To deal with Memory Limitations there are files called `dataset_hf.py` that contain the code to convert datasets into HF Datasets using Arrow. This allows to load the datasets in a more efficient way and apply transformations on the fly using Kornia.
+
+To do this you can use make commands such as: 
+
+```bash
+make vaihingen-hf
+make potsdam-hf
+make loveda-hf
+```
+
+This will create new folders called `{dataset_name}_HF`, containing the Arrow files for the images and masks. The original images and masks will not be moved, so you can still use them for other purposes if needed. This process is sharded to deal with memory limitations, so it might take some time to complete.
+
+
 # WIP
 
 ## So far
