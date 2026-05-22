@@ -1,17 +1,49 @@
 import lightning as L
 import torch
-import torch.nn as nn
 import torchio as tio
 from torch.utils.data import DataLoader
-from torchmetrics.classification import MulticlassF1Score
+from torchmetrics.classification import (
+    MulticlassAccuracy,
+    MulticlassF1Score,
+    MulticlassPrecision,
+    MulticlassRecall,
+)
 from torchmetrics.segmentation import MeanIoU
 
 
 class Segmentator(L.LightningModule):
-    def __init__(self, model, n_classes, patch_size=256, overlap=32, batch_size=16):
+    def __init__(
+        self,
+        model,
+        n_classes,
+        criterion,
+        patch_size=256,
+        overlap=32,
+        batch_size=16,
+        lr=1e-3,
+        weight_decay=1e-4,
+    ):
         super().__init__()
         self.model = model
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = criterion
+        self.accuracy = MulticlassAccuracy(
+            num_classes=n_classes,
+            average="macro",
+            ignore_index=None,
+            multidim_average="global",
+        )
+        self.recall = MulticlassRecall(
+            num_classes=n_classes,
+            average="macro",
+            ignore_index=None,
+            multidim_average="global",
+        )
+        self.precision = MulticlassPrecision(
+            num_classes=n_classes,
+            average="macro",
+            ignore_index=None,
+            multidim_average="global",
+        )
         self.f1 = MulticlassF1Score(
             num_classes=n_classes,
             average="macro",
@@ -89,25 +121,65 @@ class Segmentator(L.LightningModule):
         y_hat = full_pred.argmax(dim=0).unsqueeze(0).to(self.device)
         gt = mask.squeeze(-1).long()
 
+        self.accuracy.update(y_hat, gt)
+        self.recall.update(y_hat, gt)
+        self.precision.update(y_hat, gt)
         self.f1.update(y_hat, gt)
         self.miou.update(y_hat, gt)
         return None
 
     def on_validation_epoch_end(self):
+        accuracy = self.accuracy.compute()
+        recall = self.recall.compute()
+        precision = self.precision.compute()
         f1 = self.f1.compute()
         miou = self.miou.compute()
 
         self.log(
             "val_iou", miou, on_epoch=True, prog_bar=True, batch_size=1, logger=True
         )
+        self.log(
+            "val_accuracy",
+            accuracy,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=1,
+            logger=True,
+        )
+        self.log(
+            "val_recall",
+            recall,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=1,
+            logger=True,
+        )
+        self.log(
+            "val_precision",
+            precision,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=1,
+            logger=True,
+        )
         self.log("val_f1", f1, on_epoch=True, prog_bar=True, batch_size=1, logger=True)
+        self.accuracy.reset()
+        self.recall.reset()
+        self.precision.reset()
         self.f1.reset()
         self.miou.reset()
 
     def on_fit_start(self):
         self.f1 = self.f1.to(self.device)
+        self.accuracy = self.accuracy.to(self.device)
+        self.recall = self.recall.to(self.device)
+        self.precision = self.precision.to(self.device)
         self.miou = self.miou.to(self.device)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), lr=1e-3, weight_decay=1e-4)
+        optimizer = torch.optim.AdamW(
+            self.parameters(),
+            lr=self.hparams.lr,
+            weight_decay=self.hparams.weight_decay,
+        )
         return optimizer
