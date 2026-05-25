@@ -7,7 +7,7 @@ version: v1
 max_epochs: 1
 batch_size: 8
 grad_accumulation_batches: 32
-lr: !!float 1e-3
+lr: 1e-3
 weight_decay: !!float 1e-4
 precision: 16-mixed
 
@@ -23,7 +23,7 @@ loss_kwargs:
   mode: multiclass
   classes: *n_classes
   from_logits: true
-  smooth: !!float 1e-8
+  smooth: 1e-8
 
 model: *model_name
 model_kwargs:

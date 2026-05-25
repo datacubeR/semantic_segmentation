@@ -56,7 +56,7 @@ class Segmentator(L.LightningModule):
             per_class=False,
             input_format="index",
         )
-        self.save_hyperparameters(ignore=["model"])
+        self.save_hyperparameters(ignore=["model", "criterion"])
 
     def forward(self, x):
         return self.model(x)
@@ -66,7 +66,12 @@ class Segmentator(L.LightningModule):
         logits = self(X)
         loss = self.criterion(logits, y)
         self.log(
-            "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
+            "train_loss",
+            loss,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
         )
         return loss
 
@@ -162,7 +167,14 @@ class Segmentator(L.LightningModule):
             batch_size=1,
             logger=True,
         )
-        self.log("val_f1", f1, on_epoch=True, prog_bar=True, batch_size=1, logger=True)
+        self.log(
+            "val_f1",
+            f1,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=1,
+            logger=True,
+        )
         self.accuracy.reset()
         self.recall.reset()
         self.precision.reset()

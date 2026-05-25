@@ -12,20 +12,22 @@ from lightning.pytorch.loggers import TensorBoardLogger
 from rich import print
 from torchinfo import summary
 
+from .config import TrainerConfig
 from .datamodules import HFDataModule
-from .losses import get_loss
 from .models import get_model
 from .notify import notify
 from .segmentators import Segmentator
 
 warnings.filterwarnings("ignore")
-## TODO: Add Augmentations *
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument("--config", type=str)
 args = parser.parse_args()
 
+# ===========================================
+# Configuration Parameters
+# ===========================================
 with open(args.config, "r") as f:
     config = yaml.safe_load(f)
 
@@ -36,35 +38,21 @@ else:
     print(
         f"[bold green]Config file loaded successfully from {args.config}[/bold green]"
     )
-# ===========================================
-# Training Parameters
-# ===========================================
-CHECKPOINT_PATH = config["checkpoint_path"]
-MODEL_NAME = config["model_name"]
-DATASET_NAME = config["dataset_name"]
-VERSION = config["version"]
-IN_CHANNELS = config["in_channels"]
-N_CLASSES = config["n_classes"]
-PATCH_SIZE = config["patch_size"]
-OVERLAP = config["overlap"]
-BATCH_SIZE = config["batch_size"]
-MAX_EPOCHS = config["max_epochs"]
-GRAD_ACCUMULATION_BATCHES = config["grad_accumulation_batches"]
-PRECISION = config["precision"]
-LR = config["lr"]
-WEIGHT_DECAY = config["weight_decay"]
-LOSS_FUNCTION = get_loss(config["loss_function"], **config["loss_kwargs"])
-
+cfg = TrainerConfig(**config)
 
 L.seed_everything(42)
 
 print("[bold magenta]Initializing Model...[/bold magenta]")
-model = get_model(config["model"], **config["model_kwargs"])
+model = get_model(config.model, **config.model_kwargs.model_dump())
 
 time.sleep(3)
 os.system("cls" if os.name == "nt" else "clear")
 m_summary = str(
-    summary(model, input_size=(1, IN_CHANNELS, PATCH_SIZE, PATCH_SIZE), verbose=0)
+    summary(
+        model,
+        input_size=(1, cfg.in_channels, cfg.patch_size, cfg.patch_size),
+        verbose=0,
+    )
 )
 print(f"[bold blue]{m_summary}[/bold blue]")
 
@@ -74,15 +62,14 @@ if config["debug"]:
 
 print("[bold magenta]Initializing Data Module...[/bold magenta]")
 
-train_path = (
-    f"{DATASET_NAME}_HF/{DATASET_NAME}_train_patches-{PATCH_SIZE}x{PATCH_SIZE}/*"
-)
-val_path = f"{DATASET_NAME}_HF/{DATASET_NAME}_validation/*"
+train_path = f"{cfg.dataset_name}_HF/{cfg.dataset_name}_train_patches-{cfg.patch_size}x{cfg.patch_size}/*"
+val_path = f"{cfg.dataset_name}_HF/{cfg.dataset_name}_validation/*"
 
 
 checkpoint_callback = ModelCheckpoint(
-    dirpath=f"l_checkpoints/{DATASET_NAME}/{MODEL_NAME}/{VERSION}",
-    filename="{epoch:02d}-{step}-{val_iou:.3f}-{val_f1:.3f}-{val_loss:.3f}",
+    dirpath=f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}",
+    # filename="{epoch:02d}-{step}-{val_iou:.3f}-{val_f1:.3f}-{val_loss:.3f}",
+    filename="{epoch:02d}-{step}-val_iou-{val_iou:.3f}",
     save_top_k=1,
     monitor="val_iou",
     mode="max",
@@ -91,58 +78,58 @@ checkpoint_callback = ModelCheckpoint(
 
 logger = TensorBoardLogger(
     save_dir="tb_logs",
-    version=VERSION,
-    name=f"{DATASET_NAME}_{MODEL_NAME}",
+    version=cfg.version,
+    name=f"{cfg.dataset_name}_{cfg.model_name}",
     default_hp_metric=False,
 )
 
 
 segmentation_model = Segmentator(
     model,
-    n_classes=N_CLASSES,
-    criterion=LOSS_FUNCTION,
-    batch_size=BATCH_SIZE,
-    patch_size=PATCH_SIZE,
-    overlap=OVERLAP,
-    lr=LR,
-    weight_decay=WEIGHT_DECAY,
+    n_classes=cfg.n_classes,
+    criterion=cfg.get_loss(),
+    batch_size=cfg.batch_size,
+    patch_size=cfg.patch_size,
+    overlap=cfg.overlap,
+    lr=cfg.lr,
+    weight_decay=cfg.weight_decay,
 )
 dm = HFDataModule(
     train_path=train_path,
     val_path=val_path,
-    batch_size=segmentation_model.hparams.batch_size,
+    batch_size=cfg.batch_size,
 )
 
 print("[bold red]Starting Training...[/bold red]")
 trainer = L.Trainer(
     enable_model_summary=False,
-    max_epochs=MAX_EPOCHS,
+    max_epochs=cfg.max_epochs,
     accelerator="gpu",
     devices=1,
     enable_progress_bar=True,
     callbacks=[checkpoint_callback],
-    accumulate_grad_batches=GRAD_ACCUMULATION_BATCHES,
+    accumulate_grad_batches=cfg.accumulate_grad_batches,
     log_every_n_steps=1,
-    precision=PRECISION,
+    precision=cfg.precision,
     logger=logger,
 )
 
 
 if __name__ == "__main__":
     try:
-        if CHECKPOINT_PATH is not None and not Path(CHECKPOINT_PATH).exists():
+        if cfg.checkpoint_path is not None and not Path(cfg.checkpoint_path).exists():
             raise RuntimeError("Checkpoint path does not exist")
 
-        if CHECKPOINT_PATH is not None:
+        if cfg.checkpoint_path is not None:
             print(
-                f"[bold yellow]Resuming from checkpoint: {CHECKPOINT_PATH}[/bold yellow]"
+                f"[bold yellow]Resuming from checkpoint: {cfg.checkpoint_path}[/bold yellow]"
             )
         else:
             print(
                 "[bold yellow]No checkpoint path provided. Starting fresh training...[/bold yellow]"
             )
         start_time = time.time()
-        trainer.fit(segmentation_model, datamodule=dm, ckpt_path=CHECKPOINT_PATH)
+        trainer.fit(segmentation_model, datamodule=dm, ckpt_path=cfg.checkpoint_path)
 
         trainer.logger.log_hyperparams(
             segmentation_model.hparams,
@@ -157,7 +144,7 @@ if __name__ == "__main__":
         )
         notify(
             f"✅\n\n Training Time: {(end_time - start_time) / 60:.2f} mins. \n\n Validation IoU: {trainer.callback_metrics['val_iou'].item():.3f}.",
-            title=f"{MODEL_NAME}_{DATASET_NAME}_{VERSION} - Training Completed",
+            title=f"{cfg.model_name}_{cfg.dataset_name}_{cfg.version} - Training Completed",
             priority="5",
         )
 
@@ -165,6 +152,6 @@ if __name__ == "__main__":
         print(f"[bold red]Error during training: {e}[/bold red]")
         notify(
             "❌ Go to the Computer and check the logs for more information.",
-            title=f"{MODEL_NAME}_{DATASET_NAME}_{VERSION} - Training Failed",
+            title=f"{cfg.model_name}_{cfg.dataset_name}_{cfg.version} - Training Failed",
             priority="5",
         )
