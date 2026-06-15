@@ -25,3 +25,19 @@ Some values that worked well for me are the following:
 | Vaihingen | 5000             | 10                |
 | Potsdam   | 3000             | 10                |
  This process is sharded, you can find more details in [here](src/README.md).
+
+## Model Training
+
+You can train any model using the following command:
+
+```bash
+make train NAME=<dataset_name> CONFIG_NAME=<config_name>
+```
+
+Where `CONFIG_NAME` is the name of the configuration file for the model to train. By default the configuration files are stored in `config_files/` but you could use the `CONFIG_PATH` argument to specify a different location.
+
+The Model includes automatic Checkpointing, and Tensorboard Logging. To learn more about the model configuration go [here](config_files/README.md).
+
+## Model Validation 
+
+The `Model_Validation.ipynb` notebook allows to validate the trained models. You can specify the checkpoint to validate and the configuration file to use. The notebook will load the model and the dataset, and compute the metrics on the test set.

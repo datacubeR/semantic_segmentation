@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 
 class HFDataModule(L.LightningDataModule):
-    def __init__(self, train_path, val_path, batch_size=32):
+    def __init__(self, train_path, val_path, test_path, batch_size=32):
         super().__init__()
         self.save_hyperparameters()
 
@@ -16,6 +16,9 @@ class HFDataModule(L.LightningDataModule):
 
         if stage in ["fit", "validate"]:
             self.val_dataset = self._load_shards_into_dataset(self.hparams.val_path)
+
+        if stage in ["test"]:
+            self.test_dataset = self._load_shards_into_dataset(self.hparams.test_path)
 
     def train_dataloader(self):
         return DataLoader(
@@ -30,6 +33,15 @@ class HFDataModule(L.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
+            batch_size=1,
+            shuffle=False,
+            num_workers=10,
+            pin_memory=True,
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.test_dataset,
             batch_size=1,
             shuffle=False,
             num_workers=10,

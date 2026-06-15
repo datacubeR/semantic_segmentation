@@ -56,6 +56,7 @@ class TrainConfig(BaseModel):
     ]
     dataset_name: Literal["Vaihingen", "DeadTrees", "Potsdam", "LoveDA"]
     version: str
+    save_top_k: int
 
     in_channels: int
     n_classes: int

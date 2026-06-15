@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 import sys
 import time
 import traceback
@@ -74,54 +75,56 @@ print("[bold magenta]Initializing Data Module...[/bold magenta]")
 
 train_path = f"{cfg.dataset_name}_HF/{cfg.dataset_name}_train_patches-{cfg.patch_size}x{cfg.patch_size}/*"
 val_path = f"{cfg.dataset_name}_HF/{cfg.dataset_name}_validation/*"
+test_path = f"{cfg.dataset_name}_HF/{cfg.dataset_name}_test/*"
 
+
+dirpath = Path(f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}")
 
 iou_checkpoint_callback = ModelCheckpoint(
-    dirpath=f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}",
-    # filename="{epoch:02d}-{step}-{val_iou:.3f}-{val_f1:.3f}-{val_loss:.3f}",
-    filename="best_iou.ckpt",
-    save_top_k=1,
-    monitor="metrics/val_iou",
+    dirpath=dirpath,
+    filename="best_miou_{val_metrics/miou:.4f}",
+    save_top_k=cfg.save_top_k,
+    monitor="val_metrics/miou",
     mode="max",
     save_last=True,
     enable_version_counter=False,
 )
 
 f1_checkpoint_callback = ModelCheckpoint(
-    dirpath=f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}",
-    filename="best_f1.ckpt",
-    save_top_k=1,
-    monitor="metrics/val_f1",
+    dirpath=dirpath,
+    filename="best_f1_{val_metrics/f1:.4f}",
+    monitor="val_metrics/f1",
     mode="max",
+    save_top_k=cfg.save_top_k,
     save_last=True,
     enable_version_counter=False,
 )
 
 precision_checkpoint_callback = ModelCheckpoint(
-    dirpath=f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}",
-    filename="best_precision.ckpt",
-    save_top_k=1,
-    monitor="metrics/val_precision",
+    dirpath=dirpath,
+    filename="best_precision_{val_metrics/precision:.4f}",
+    save_top_k=cfg.save_top_k,
+    monitor="val_metrics/precision",
     mode="max",
     save_last=True,
     enable_version_counter=False,
 )
 
 recall_checkpoint_callback = ModelCheckpoint(
-    dirpath=f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}",
-    filename="best_recall.ckpt",
+    dirpath=dirpath,
+    filename="best_recall_{val_metrics/recall:.4f}",
     save_top_k=1,
-    monitor="metrics/val_recall",
+    monitor="val_metrics/recall",
     mode="max",
     save_last=True,
     enable_version_counter=False,
 )
 
 accuracy_checkpoint_callback = ModelCheckpoint(
-    dirpath=f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}",
-    filename="best_accuracy.ckpt",
+    dirpath=dirpath,
+    filename="best_accuracy_{val_metrics/accuracy:.4f}",
     save_top_k=1,
-    monitor="metrics/val_accuracy",
+    monitor="val_metrics/accuracy",
     mode="max",
     save_last=True,
     enable_version_counter=False,
@@ -152,6 +155,7 @@ segmentation_model = GridSegmentor(
 dm = HFDataModule(
     train_path=train_path,
     val_path=val_path,
+    test_path=test_path,
     batch_size=cfg.batch_size,
 )
 
@@ -192,6 +196,10 @@ if __name__ == "__main__":
                 "[bold yellow]No checkpoint path provided. Starting fresh training...[/bold yellow]"
             )
         start_time = time.time()
+
+        ## TODO: Check if this works as expected.
+        if dirpath.exists():
+            shutil.rmtree(dirpath)
         trainer.fit(segmentation_model, datamodule=dm, ckpt_path=cfg.checkpoint_path)
 
         trainer.logger.log_hyperparams(

@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torchio as tio
 from torch.utils.data import DataLoader
+from torchmetrics import MetricCollection
 from torchmetrics.classification import (
     MulticlassAccuracy,
     MulticlassF1Score,
@@ -31,37 +32,46 @@ class GridSegmentor(L.LightningModule):
         self.image_processor = image_processor
         self.criterion = criterion
         self.hf_model = hf_model
-        self.accuracy = MulticlassAccuracy(
-            num_classes=n_classes,
-            average="macro",
-            ignore_index=None,
-            multidim_average="global",
+
+        self.val_metrics = MetricCollection(
+            {
+                "accuracy": MulticlassAccuracy(
+                    num_classes=n_classes,
+                    average="macro",
+                    ignore_index=None,
+                    multidim_average="global",
+                ),
+                "recall": MulticlassRecall(
+                    num_classes=n_classes,
+                    average="macro",
+                    ignore_index=None,
+                    multidim_average="global",
+                ),
+                "precision": MulticlassPrecision(
+                    num_classes=n_classes,
+                    average="macro",
+                    ignore_index=None,
+                    multidim_average="global",
+                ),
+                "f1": MulticlassF1Score(
+                    num_classes=n_classes,
+                    average="macro",
+                    ignore_index=None,
+                    multidim_average="global",
+                ),
+                "miou": MeanIoU(
+                    num_classes=n_classes,
+                    include_background=True,
+                    per_class=False,
+                    input_format="index",
+                ),
+            },
+            prefix="val_metrics/",
         )
-        self.recall = MulticlassRecall(
-            num_classes=n_classes,
-            average="macro",
-            ignore_index=None,
-            multidim_average="global",
+        self.test_metrics = self.val_metrics.clone(prefix="test_metrics/")
+        self.save_hyperparameters(
+            ignore=["model", "criterion", "hf_model", "val_metrics", "test_metrics"]
         )
-        self.precision = MulticlassPrecision(
-            num_classes=n_classes,
-            average="macro",
-            ignore_index=None,
-            multidim_average="global",
-        )
-        self.f1 = MulticlassF1Score(
-            num_classes=n_classes,
-            average="macro",
-            ignore_index=None,
-            multidim_average="global",
-        )
-        self.miou = MeanIoU(
-            num_classes=n_classes,
-            include_background=True,
-            per_class=False,
-            input_format="index",
-        )
-        self.save_hyperparameters(ignore=["model", "criterion", "hf_model"])
 
     def forward(self, x, labels=None):
         if labels is not None:
@@ -101,6 +111,54 @@ class GridSegmentor(L.LightningModule):
             batch["image"].unsqueeze(-1).squeeze(0),
             batch["mask"].unsqueeze(-1),
         )
+
+        avg_loss, y_hat = self._forward_grid_batch(image, mask)
+        gt = mask.squeeze(-1).long()
+
+        self.log(
+            "losses/val_loss",
+            avg_loss,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=1,
+            logger=True,
+        )
+
+        self.val_metrics.update(y_hat, gt)
+        # self.accuracy.update(y_hat, gt)
+        # self.recall.update(y_hat, gt)
+        # self.precision.update(y_hat, gt)
+        # self.f1.update(y_hat, gt)
+        # self.miou.update(y_hat, gt)
+        return None
+
+    def test_step(self, batch, batch_idx):
+        image, mask = (
+            batch["image"].unsqueeze(-1).squeeze(0),
+            batch["mask"].unsqueeze(-1),
+        )
+
+        avg_loss, y_hat = self._forward_grid_batch(image, mask)
+        gt = mask.squeeze(-1).long()
+
+        self.log(
+            "losses/test_loss",
+            avg_loss,
+            prog_bar=True,
+            batch_size=1,
+            logger=True,
+        )
+
+        self.test_metrics.update(y_hat, gt)
+
+        # self.accuracy.update(y_hat, gt)
+        # self.recall.update(y_hat, gt)
+        # self.precision.update(y_hat, gt)
+        # self.f1.update(y_hat, gt)
+        # self.miou.update(y_hat, gt)
+        return None
+
+    def _forward_grid_batch(self, image, mask):
 
         subject = tio.Subject(
             image=tio.ScalarImage(tensor=image), mask=tio.LabelMap(tensor=mask)
@@ -151,89 +209,89 @@ class GridSegmentor(L.LightningModule):
                 n_patches += 1
 
         avg_loss = total_loss / n_patches
-        self.log(
-            "losses/val_loss",
-            avg_loss,
-            on_epoch=True,
-            prog_bar=True,
-            batch_size=1,
-            logger=True,
-        )
         full_pred = aggregator.get_output_tensor().squeeze(-1)
 
         # if self.hf_model == "mask2former":
         #     y_hat = full_pred.long().to(self.device)
         # else:
         y_hat = full_pred.argmax(dim=0).unsqueeze(0).to(self.device)
-
-        gt = mask.squeeze(-1).long()
-
-        self.accuracy.update(y_hat, gt)
-        self.recall.update(y_hat, gt)
-        self.precision.update(y_hat, gt)
-        self.f1.update(y_hat, gt)
-        self.miou.update(y_hat, gt)
-        return None
+        return avg_loss, y_hat
 
     def on_validation_epoch_end(self):
-        accuracy = self.accuracy.compute()
-        recall = self.recall.compute()
-        precision = self.precision.compute()
-        f1 = self.f1.compute()
-        miou = self.miou.compute()
+        self.log_dict(
+            self.val_metrics.compute(), prog_bar=True, logger=True, batch_size=1
+        )
+        self.val_metrics.reset()
 
-        self.log(
-            "metrics/val_iou",
-            miou,
-            on_epoch=True,
-            prog_bar=True,
-            batch_size=1,
-            logger=True,
+    def on_test_epoch_end(self):
+        self.log_dict(
+            self.test_metrics.compute(), prog_bar=True, logger=True, batch_size=1
         )
-        self.log(
-            "metrics/val_accuracy",
-            accuracy,
-            on_epoch=True,
-            prog_bar=False,
-            batch_size=1,
-            logger=True,
-        )
-        self.log(
-            "metrics/val_recall",
-            recall,
-            on_epoch=True,
-            prog_bar=False,
-            batch_size=1,
-            logger=True,
-        )
-        self.log(
-            "metrics/val_precision",
-            precision,
-            on_epoch=True,
-            prog_bar=False,
-            batch_size=1,
-            logger=True,
-        )
-        self.log(
-            "metrics/val_f1",
-            f1,
-            on_epoch=True,
-            prog_bar=True,
-            batch_size=1,
-            logger=True,
-        )
-        self.accuracy.reset()
-        self.recall.reset()
-        self.precision.reset()
-        self.f1.reset()
-        self.miou.reset()
+        self.test_metrics.reset()
 
-    def on_fit_start(self):
-        self.f1 = self.f1.to(self.device)
-        self.accuracy = self.accuracy.to(self.device)
-        self.recall = self.recall.to(self.device)
-        self.precision = self.precision.to(self.device)
-        self.miou = self.miou.to(self.device)
+    # def on_validation_epoch_end(self):
+    # accuracy = self.accuracy.compute()
+    # recall = self.recall.compute()
+    # precision = self.precision.compute()
+    # f1 = self.f1.compute()
+    # miou = self.miou.compute()
+
+    # self.log(
+    #     "metrics/val_iou",
+    #     miou,
+    #     on_epoch=True,
+    #     prog_bar=True,
+    #     batch_size=1,
+    #     logger=True,
+    # )
+    # self.log(
+    #     "metrics/val_accuracy",
+    #     accuracy,
+    #     on_epoch=True,
+    #     prog_bar=False,
+    #     batch_size=1,
+    #     logger=True,
+    # )
+    # self.log(
+    #     "metrics/val_recall",
+    #     recall,
+    #     on_epoch=True,
+    #     prog_bar=False,
+    #     batch_size=1,
+    #     logger=True,
+    # )
+    # self.log(
+    #     "metrics/val_precision",
+    #     precision,
+    #     on_epoch=True,
+    #     prog_bar=False,
+    #     batch_size=1,
+    #     logger=True,
+    # )
+    # self.log(
+    #     "metrics/val_f1",
+    #     f1,
+    #     on_epoch=True,
+    #     prog_bar=True,
+    #     batch_size=1,
+    #     logger=True,
+    # )
+    # self.accuracy.reset()
+    # self.recall.reset()
+    # self.precision.reset()
+    # self.f1.reset()
+    # self.miou.reset()
+
+    # def on_fit_start(self):
+    #     self.val_metrics = self.val_metrics.to(self.device)
+    #     self.test_metrics = self.test_metrics.to(self.device)
+
+    # def on_fit_start(self):
+    #     self.f1 = self.f1.to(self.device)
+    #     self.accuracy = self.accuracy.to(self.device)
+    #     self.recall = self.recall.to(self.device)
+    #     self.precision = self.precision.to(self.device)
+    #     self.miou = self.miou.to(self.device)
 
     # def _post_process(self, output, patch_size, batch_size):
     #     processor_output = self.image_processor.post_process_semantic_segmentation(
