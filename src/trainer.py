@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 import time
+import traceback
 import warnings
 from pathlib import Path
 
@@ -11,12 +12,15 @@ from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import TensorBoardLogger
 from rich import print
 from torchinfo import summary
+from transformers import AutoImageProcessor
 
-from .config import TrainerConfig
+from .config import TrainConfig
 from .datamodules import HFDataModule
 from .models import get_model
 from .notify import notify
-from .segmentators import Segmentator
+from .segmentors import GridSegmentor
+from .system_callback import SystemMetricsCallback
+from .timing_callback import TimingCallback
 
 warnings.filterwarnings("ignore")
 
@@ -38,12 +42,18 @@ else:
     print(
         f"[bold green]Config file loaded successfully from {args.config}[/bold green]"
     )
-cfg = TrainerConfig(**config)
+cfg = TrainConfig(**config)
 
 L.seed_everything(42)
 
 print("[bold magenta]Initializing Model...[/bold magenta]")
-model = get_model(config.model, **config.model_kwargs.model_dump())
+model = get_model(cfg.model, **cfg.model_kwargs.model_dump())
+
+image_processor = None
+if cfg.model_name == "mask2former":
+    image_processor = AutoImageProcessor.from_pretrained(
+        cfg.model_kwargs.pretrained_model_name_or_path
+    )
 
 time.sleep(3)
 os.system("cls" if os.name == "nt" else "clear")
@@ -66,14 +76,55 @@ train_path = f"{cfg.dataset_name}_HF/{cfg.dataset_name}_train_patches-{cfg.patch
 val_path = f"{cfg.dataset_name}_HF/{cfg.dataset_name}_validation/*"
 
 
-checkpoint_callback = ModelCheckpoint(
+iou_checkpoint_callback = ModelCheckpoint(
     dirpath=f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}",
     # filename="{epoch:02d}-{step}-{val_iou:.3f}-{val_f1:.3f}-{val_loss:.3f}",
-    filename="{epoch:02d}-{step}-val_iou-{val_iou:.3f}",
+    filename="best_iou.ckpt",
     save_top_k=1,
-    monitor="val_iou",
+    monitor="metrics/val_iou",
     mode="max",
     save_last=True,
+    enable_version_counter=False,
+)
+
+f1_checkpoint_callback = ModelCheckpoint(
+    dirpath=f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}",
+    filename="best_f1.ckpt",
+    save_top_k=1,
+    monitor="metrics/val_f1",
+    mode="max",
+    save_last=True,
+    enable_version_counter=False,
+)
+
+precision_checkpoint_callback = ModelCheckpoint(
+    dirpath=f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}",
+    filename="best_precision.ckpt",
+    save_top_k=1,
+    monitor="metrics/val_precision",
+    mode="max",
+    save_last=True,
+    enable_version_counter=False,
+)
+
+recall_checkpoint_callback = ModelCheckpoint(
+    dirpath=f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}",
+    filename="best_recall.ckpt",
+    save_top_k=1,
+    monitor="metrics/val_recall",
+    mode="max",
+    save_last=True,
+    enable_version_counter=False,
+)
+
+accuracy_checkpoint_callback = ModelCheckpoint(
+    dirpath=f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}",
+    filename="best_accuracy.ckpt",
+    save_top_k=1,
+    monitor="metrics/val_accuracy",
+    mode="max",
+    save_last=True,
+    enable_version_counter=False,
 )
 
 logger = TensorBoardLogger(
@@ -83,11 +134,15 @@ logger = TensorBoardLogger(
     default_hp_metric=False,
 )
 
+system_metrics_callback = SystemMetricsCallback()
+timing_callback = TimingCallback()
 
-segmentation_model = Segmentator(
+segmentation_model = GridSegmentor(
     model,
     n_classes=cfg.n_classes,
     criterion=cfg.get_loss(),
+    image_processor=image_processor,
+    hf_model=cfg.model,
     batch_size=cfg.batch_size,
     patch_size=cfg.patch_size,
     overlap=cfg.overlap,
@@ -102,13 +157,21 @@ dm = HFDataModule(
 
 print("[bold red]Starting Training...[/bold red]")
 trainer = L.Trainer(
-    enable_model_summary=False,
+    enable_model_summary=True,
     max_epochs=cfg.max_epochs,
     accelerator="gpu",
     devices=1,
     enable_progress_bar=True,
-    callbacks=[checkpoint_callback],
-    accumulate_grad_batches=cfg.accumulate_grad_batches,
+    callbacks=[
+        iou_checkpoint_callback,
+        f1_checkpoint_callback,
+        precision_checkpoint_callback,
+        recall_checkpoint_callback,
+        accuracy_checkpoint_callback,
+        system_metrics_callback,
+        timing_callback,
+    ],
+    accumulate_grad_batches=cfg.grad_accumulation_batches,
     log_every_n_steps=1,
     precision=cfg.precision,
     logger=logger,
@@ -134,7 +197,12 @@ if __name__ == "__main__":
         trainer.logger.log_hyperparams(
             segmentation_model.hparams,
             {
-                "hp_metric": trainer.callback_metrics["val_iou"].item(),
+                "hp_metric": iou_checkpoint_callback.best_model_score.item(),
+                "best_iou": iou_checkpoint_callback.best_model_score.item(),
+                "best_f1": f1_checkpoint_callback.best_model_score.item(),
+                "best_precision": precision_checkpoint_callback.best_model_score.item(),
+                "best_recall": recall_checkpoint_callback.best_model_score.item(),
+                "best_accuracy": accuracy_checkpoint_callback.best_model_score.item(),
             },
         )
         print("[bold green]Training Completed![/bold green]")
@@ -143,13 +211,14 @@ if __name__ == "__main__":
             f"[bold cyan]Training Time: {end_time - start_time:.2f} seconds[/bold cyan]"
         )
         notify(
-            f"✅\n\n Training Time: {(end_time - start_time) / 60:.2f} mins. \n\n Validation IoU: {trainer.callback_metrics['val_iou'].item():.3f}.",
+            f"✅\n\n Training Time: {(end_time - start_time) / 60:.2f} mins. \n\n Validation IoU: {iou_checkpoint_callback.best_model_score.item():.3f}.",
             title=f"{cfg.model_name}_{cfg.dataset_name}_{cfg.version} - Training Completed",
             priority="5",
         )
 
-    except Exception as e:
-        print(f"[bold red]Error during training: {e}[/bold red]")
+    except Exception:
+        error_msg = traceback.format_exc()
+        print(f"[bold red]Error during training:\n{error_msg}[/bold red]")
         notify(
             "❌ Go to the Computer and check the logs for more information.",
             title=f"{cfg.model_name}_{cfg.dataset_name}_{cfg.version} - Training Failed",

@@ -32,14 +32,14 @@ class SegnetConfig(BaseModel):
 class SMPConfig(BaseModel):
     encoder_name: str
     in_channels: int
-    out_channels: int
+    classes: int
     encoder_depth: int = 5
     encoder_weights: Optional[str] = "imagenet"
 
 
 class HFTransformersConfig(BaseModel):
     pretrained_model_name_or_path: str
-    n_in_channels: int
+    num_labels: int
     ignore_mismatched_sizes: bool = True
 
 
@@ -51,8 +51,10 @@ class TrainConfig(BaseModel):
 
     debug: bool
 
-    model_name: str
-    dataset_name: str
+    model_name: Literal[
+        "unet", "unetpp", "swin", "upernet", "segformer", "segnet", "mask2former"
+    ]
+    dataset_name: Literal["Vaihingen", "DeadTrees", "Potsdam", "LoveDA"]
     version: str
 
     in_channels: int
@@ -76,16 +78,15 @@ class TrainConfig(BaseModel):
 
     model: str
 
-    loss_function: Literal[
-        "cross_entropy",
-        "dice_loss",
-        "focal_loss",
-    ]
-    loss_kwargs: LossKwargs
+    loss_function: Literal["cross_entropy", "dice_loss", "focal_loss"] | None
+    loss_kwargs: LossKwargs | None
 
     model_kwargs: ModelKwargs
 
     def get_loss(self):
+        if self.loss_function is None:
+            return None
+
         loss_map = {
             "cross_entropy": nn.CrossEntropyLoss,
             "dice_loss": smp.losses.DiceLoss,

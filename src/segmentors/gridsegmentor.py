@@ -1,5 +1,6 @@
 import lightning as L
 import torch
+import torch.nn as nn
 import torchio as tio
 from torch.utils.data import DataLoader
 from torchmetrics.classification import (
@@ -11,21 +12,25 @@ from torchmetrics.classification import (
 from torchmetrics.segmentation import MeanIoU
 
 
-class Segmentator(L.LightningModule):
+class GridSegmentor(L.LightningModule):
     def __init__(
         self,
-        model,
-        n_classes,
-        criterion,
-        patch_size=256,
-        overlap=32,
-        batch_size=16,
-        lr=1e-3,
-        weight_decay=1e-4,
+        model: nn.Module,
+        n_classes: int,
+        image_processor: nn.Module | None = None,
+        criterion: nn.Module | None = None,
+        hf_model: str | None = None,
+        patch_size: int = 256,
+        overlap: int = 32,
+        batch_size: int = 16,
+        lr: float = 1e-3,
+        weight_decay: float = 1e-4,
     ):
         super().__init__()
-        self.model = model
+        self.model = model.train()
+        self.image_processor = image_processor
         self.criterion = criterion
+        self.hf_model = hf_model
         self.accuracy = MulticlassAccuracy(
             num_classes=n_classes,
             average="macro",
@@ -56,18 +61,34 @@ class Segmentator(L.LightningModule):
             per_class=False,
             input_format="index",
         )
-        self.save_hyperparameters(ignore=["model", "criterion"])
+        self.save_hyperparameters(ignore=["model", "criterion", "hf_model"])
 
-    def forward(self, x):
+    def forward(self, x, labels=None):
+        if labels is not None:
+            return self.model(x, labels=labels)
+
         return self.model(x)
+
+    # def forward(self, **kwargs):
+    #     return self.model(**kwargs)
 
     def training_step(self, batch, batch_idx):
         X, y = batch["image"], batch["mask"]
-        logits = self(X)
-        loss = self.criterion(logits, y)
+
+        if self.hf_model == "swin":
+            output = self(X, labels=y)
+            loss, logits = output.loss, output.logits
+
+        # elif self.hf_model == "mask2former":
+        #     inputs = self.image_processor(X, segmentation_maps=y, return_tensors="pt")
+        #     outputs = self(**inputs)
+        #     loss = outputs.loss
+        else:
+            logits = self(X)
+            loss = self.criterion(logits, y)
         self.log(
-            "train_loss",
-            loss,
+            "losses/train_loss",
+            loss.item(),
             on_step=True,
             on_epoch=True,
             prog_bar=True,
@@ -103,18 +124,35 @@ class Segmentator(L.LightningModule):
                 X = X.squeeze(-1)
                 y = y.squeeze(-1).squeeze(1).long()
 
-                pred = self(X)
+                if self.hf_model == "swin":
+                    output = self(X, labels=y)
+                    loss, logits = output.loss, output.logits
+
+                # elif self.hf_model == "mask2former":
+                #     inputs = self.image_processor(
+                #         X, segmentation_maps=y, return_tensors="pt"
+                #     )
+                #     outputs = self(**inputs)
+                #     loss = outputs.loss
+                #     logits = self._post_process(
+                #         outputs,
+                #         patch_size=self.hparams.patch_size,
+                #         batch_size=X.shape[0],
+                #     )
+                else:
+                    logits = self(X)
+                    loss = self.criterion(logits, y)
+
                 aggregator.add_batch(
-                    pred.detach().cpu().unsqueeze(-1), patch[tio.LOCATION]
+                    logits.detach().cpu().unsqueeze(-1), patch[tio.LOCATION]
                 )
 
-                loss = self.criterion(pred, y)
                 total_loss += loss.item()
                 n_patches += 1
 
         avg_loss = total_loss / n_patches
         self.log(
-            "val_loss",
+            "losses/val_loss",
             avg_loss,
             on_epoch=True,
             prog_bar=True,
@@ -123,7 +161,11 @@ class Segmentator(L.LightningModule):
         )
         full_pred = aggregator.get_output_tensor().squeeze(-1)
 
+        # if self.hf_model == "mask2former":
+        #     y_hat = full_pred.long().to(self.device)
+        # else:
         y_hat = full_pred.argmax(dim=0).unsqueeze(0).to(self.device)
+
         gt = mask.squeeze(-1).long()
 
         self.accuracy.update(y_hat, gt)
@@ -141,34 +183,39 @@ class Segmentator(L.LightningModule):
         miou = self.miou.compute()
 
         self.log(
-            "val_iou", miou, on_epoch=True, prog_bar=True, batch_size=1, logger=True
+            "metrics/val_iou",
+            miou,
+            on_epoch=True,
+            prog_bar=True,
+            batch_size=1,
+            logger=True,
         )
         self.log(
-            "val_accuracy",
+            "metrics/val_accuracy",
             accuracy,
             on_epoch=True,
-            prog_bar=True,
+            prog_bar=False,
             batch_size=1,
             logger=True,
         )
         self.log(
-            "val_recall",
+            "metrics/val_recall",
             recall,
             on_epoch=True,
-            prog_bar=True,
+            prog_bar=False,
             batch_size=1,
             logger=True,
         )
         self.log(
-            "val_precision",
+            "metrics/val_precision",
             precision,
             on_epoch=True,
-            prog_bar=True,
+            prog_bar=False,
             batch_size=1,
             logger=True,
         )
         self.log(
-            "val_f1",
+            "metrics/val_f1",
             f1,
             on_epoch=True,
             prog_bar=True,
@@ -187,6 +234,12 @@ class Segmentator(L.LightningModule):
         self.recall = self.recall.to(self.device)
         self.precision = self.precision.to(self.device)
         self.miou = self.miou.to(self.device)
+
+    # def _post_process(self, output, patch_size, batch_size):
+    #     processor_output = self.image_processor.post_process_semantic_segmentation(
+    #         output, target_sizes=[(patch_size, patch_size)] * batch_size
+    #     )
+    #     return torch.stack(processor_output).unsqueeze(1)
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(

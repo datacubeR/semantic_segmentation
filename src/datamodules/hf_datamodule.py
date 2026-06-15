@@ -24,6 +24,7 @@ class HFDataModule(L.LightningDataModule):
             shuffle=True,
             num_workers=10,
             pin_memory=True,
+            drop_last=True,
         )
 
     def val_dataloader(self):

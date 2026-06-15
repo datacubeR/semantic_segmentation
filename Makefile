@@ -1,4 +1,7 @@
-.PHONY: vaihingen-hf, potsdam-hf, loveda-hf, train
+.PHONY: vaihingen-split, vaihingen-hf, potsdam-hf, loveda-hf, train-segnet-vaihingen-v1, train-unet-vaihingen-v1, train-unetpp-vaihingen-v1, train-upernet-vaihingen-v1, train-segformer-vaihingen-v1, train-swin-vaihingen-v1, train-mask2former-vaihingen-v1
+
+vaihingen-split:
+	uv run -m splitters.dataset_splitter --dataset-folder "Vaihingen_dataset" --image-folder "top" --mask-folder "labels" --train-size 0.8 --test-size 0.2
 
 vaihingen-hf: 
 	uv run -m src.vaihingen_hf_dataset
