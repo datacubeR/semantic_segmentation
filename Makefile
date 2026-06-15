@@ -3,6 +3,9 @@
 vaihingen-split:
 	uv run -m splitters.dataset_splitter --dataset-folder "Vaihingen_dataset" --image-folder "top" --mask-folder "labels" --train-size 0.8 --test-size 0.2
 
+potsdam-split:
+	uv run -m splitters.dataset_splitter --dataset-folder "Potsdam_dataset" --image-folder "2_Ortho_RGB" --mask-folder "5_Labels_all" --train-size 0.8 --test-size 0.2
+
 deadtrees-split:
 	uv run -m splitters.deadtrees_dataset_splitter --dataset-folder "DeadTrees" --image-folder "dataset_rgb" --mask-folder "dataset_binary" --train-size 0.8 --test-size 0.2
 
