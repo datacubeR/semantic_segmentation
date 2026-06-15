@@ -11,7 +11,7 @@ make deadtrees-split
 ```
 Under the hood, the appropriate dataset splitter (`dataset_splitter.py` or `deadtrees_dataset_splitter.py`) is executed with the corresponding arguments for the selected dataset.
 
-The arguments for the both are as follows: 
+The arguments for both are as follows: 
 - `--dataset-folder` is the name of the folder containing the dataset.
 - `--image-folder` is the name of the folder containing the image files.
 - `--mask-folder` is the name of the folder containing the mask images.

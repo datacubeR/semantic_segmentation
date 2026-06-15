@@ -10,9 +10,9 @@ class HFDataset:
 
     def build_patches(
         self,
-        output_path,
-        patch_kwargs=None,
-        shard_size=5000,
+        output_path: str,
+        patch_kwargs: dict = None,
+        shard_size: int = 5000,
     ):
         all_images = []
         all_masks = []
@@ -83,7 +83,7 @@ class HFDataset:
             all_masks.clear()
             gc.collect()
 
-    def build_full(self, output_path, shard_size=2):
+    def build_full(self, output_path: str, shard_size: int = 2):
         all_images = []
         all_masks = []
 

@@ -1,5 +1,11 @@
 .PHONY: vaihingen-split, potsdam-split, loveda-split, deadtrees-split, vaihingen-hf, potsdam-hf, loveda-hf, train-segnet-vaihingen-v1, train-unet-vaihingen-v1, train-unetpp-vaihingen-v1, train-upernet-vaihingen-v1, train-segformer-vaihingen-v1, train-swin-vaihingen-v1, train-mask2former-vaihingen-v1
 
+PATCH_SIZE ?= 256
+NAME ?= 
+VT ?= 0
+TR ?= 1
+TRAIN_SHARDS ?= 5000
+
 vaihingen-split:
 	uv run -m splitters.dataset_splitter --dataset-folder "Vaihingen_dataset" --image-folder "top" --mask-folder "labels" --train-size 0.8 --test-size 0.2
 
@@ -12,14 +18,16 @@ loveda-split:
 deadtrees-split:
 	uv run -m splitters.deadtrees_dataset_splitter --dataset-folder "DeadTrees" --image-folder "dataset_rgb" --mask-folder "dataset_binary" --train-size 0.8 --test-size 0.2
 
-vaihingen-hf: 
-	uv run -m src.vaihingen_hf_dataset
+hf:
+	uv run -m src.create_hf_dataset \
+		--dataset-folder $(NAME) \
+		--patch-size $(PATCH_SIZE) \
+		--train-shard-size $(TRAIN_SHARDS) \
+		$(if $(filter 1,$(TR)),-tr) \
+		$(if $(filter 1,$(VT)),-vt)
 
-potsdam-hf: 
-	uv run -m src.potsdam_hf_dataset
-
-loveda-hf: 
-	uv run -m src.loveda_hf_dataset
+# loveda-hf: 
+# 	uv run -m src.loveda_hf_dataset
 
 train-segnet-vaihingen-v1:
 	uv run -m src.trainer --config config_files/segnet_vaihingen_v1.yaml
