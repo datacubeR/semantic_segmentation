@@ -1,10 +1,13 @@
-.PHONY: vaihingen-split, vaihingen-hf, potsdam-hf, loveda-hf, train-segnet-vaihingen-v1, train-unet-vaihingen-v1, train-unetpp-vaihingen-v1, train-upernet-vaihingen-v1, train-segformer-vaihingen-v1, train-swin-vaihingen-v1, train-mask2former-vaihingen-v1
+.PHONY: vaihingen-split, potsdam-split, loveda-split, deadtrees-split, vaihingen-hf, potsdam-hf, loveda-hf, train-segnet-vaihingen-v1, train-unet-vaihingen-v1, train-unetpp-vaihingen-v1, train-upernet-vaihingen-v1, train-segformer-vaihingen-v1, train-swin-vaihingen-v1, train-mask2former-vaihingen-v1
 
 vaihingen-split:
 	uv run -m splitters.dataset_splitter --dataset-folder "Vaihingen_dataset" --image-folder "top" --mask-folder "labels" --train-size 0.8 --test-size 0.2
 
 potsdam-split:
 	uv run -m splitters.dataset_splitter --dataset-folder "Potsdam_dataset" --image-folder "2_Ortho_RGB" --mask-folder "5_Labels_all" --train-size 0.8 --test-size 0.2
+
+loveda-split:
+	uv run -m splitters.loveda_dataset_splitter --dataset-folder loveda_dataset
 
 deadtrees-split:
 	uv run -m splitters.deadtrees_dataset_splitter --dataset-folder "DeadTrees" --image-folder "dataset_rgb" --mask-folder "dataset_binary" --train-size 0.8 --test-size 0.2
