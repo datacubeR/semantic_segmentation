@@ -6,7 +6,7 @@ These are all the experiments conducted for the Chapter 2 of my Phd Thesis.
 
 Contains the code to split the datasets into train, validation and test sets. To understand how it works refer to the [README](splitters/README.md) file in the Splitters Folder.
 
-## HuggingFace Datasets
+## HuggingFace Datasets WIP
 
 To deal with Memory Limitations there are files called `dataset_hf.py` that contain the code to convert datasets into HF Datasets using Arrow. This allows to load the datasets in a more efficient way and apply transformations on the fly using Kornia.
 
@@ -16,6 +16,7 @@ To do this you can use make commands such as:
 make vaihingen-hf
 make potsdam-hf
 make loveda-hf
+make deadtrees-hf
 ```
 
 This will create new folders called `{dataset_name}_HF`, containing the Arrow files for the images and masks. The original images and masks will not be moved, so you can still use them for other purposes if needed. This process is sharded to deal with memory limitations, so it might take some time to complete.

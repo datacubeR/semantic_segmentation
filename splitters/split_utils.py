@@ -4,7 +4,7 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 
 
-def create_split_folders(folder_name, images, masks):
+def create_split_folders(folder_name: str, images: Path, masks: Path) -> None:
     Path(f"{folder_name}/images").mkdir(parents=True, exist_ok=True)
     Path(f"{folder_name}/masks").mkdir(parents=True, exist_ok=True)
 
@@ -16,7 +16,11 @@ def create_split_folders(folder_name, images, masks):
 
 
 def split_images_and_masks(
-    image_glob, mask_glob, train_size=0.8, test_size=0.2, random_state=42
+    image_glob: str,
+    mask_glob: str,
+    train_size: float = 0.8,
+    test_size: float = 0.2,
+    random_state: int = 42,
 ):
     image_paths = sorted(list(Path(image_glob).glob("*.tif")))
     mask_paths = sorted(list(Path(mask_glob).glob("*.tif")))
