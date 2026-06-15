@@ -7,7 +7,6 @@ To split the dataset, use one of the following commands:
 ```bash
 make vaihingen-split
 make potsdam-split
-make loveda-split
 ```
 
 Each one will run the corresponding command. Under the hood, it will run the `dataset_splitter.py` script with the appropriate arguments for each dataset.
