@@ -12,5 +12,8 @@ Vaihingen_dataset
 loveda_dataset
 __pycache__
 DeadTrees
-logs
+tb_logs
+l_checkpoints
 checkpoints
+*_HF
+cuda-keyring_1.1-1_all.deb

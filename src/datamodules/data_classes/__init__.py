@@ -3,6 +3,7 @@ from .geonrw import GeoNRW
 from .gid15 import GID15
 from .gridloader import GridLoader
 from .gridpatch import GridPatchDataset
+from .hfdataset import HFDataset
 from .loveda import LoveDAds
 from .potsdamvaihingen import PotsdamVaihingen
 from .regular_data_module import RegularDataModule
@@ -16,4 +17,5 @@ __all__ = [
     "GridPatchDataset",
     "GridLoader",
     "RegularDataModule",
+    "HFDataset",
 ]
