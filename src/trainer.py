@@ -8,6 +8,7 @@ import warnings
 from pathlib import Path
 
 import lightning as L
+import torch
 import yaml
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import TensorBoardLogger
@@ -22,6 +23,8 @@ from .notify import notify
 from .segmentors import GridSegmentor
 from .system_callback import SystemMetricsCallback
 from .timing_callback import TimingCallback
+
+# TODO: Add version enhancement...
 
 warnings.filterwarnings("ignore")
 
@@ -160,6 +163,7 @@ dm = HFDataModule(
 )
 
 print("[bold red]Starting Training...[/bold red]")
+torch.set_float32_matmul_precision("high")
 trainer = L.Trainer(
     enable_model_summary=True,
     max_epochs=cfg.max_epochs,
@@ -197,7 +201,6 @@ if __name__ == "__main__":
             )
         start_time = time.time()
 
-        ## TODO: Check if this works as expected.
         if dirpath.exists():
             shutil.rmtree(dirpath)
         trainer.fit(segmentation_model, datamodule=dm, ckpt_path=cfg.checkpoint_path)

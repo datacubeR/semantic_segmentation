@@ -1,8 +1,8 @@
 checkpoint_path: null
 
 debug: false
-model_name: &model_name unet
-dataset_name: Vaihingen
+model_name: &model_name upernet
+dataset_name: Potsdam
 version: v1
 max_epochs: 50
 save_top_k: 3
@@ -28,7 +28,7 @@ loss_kwargs:
 
 model: *model_name
 model_kwargs:
-  encoder_name: efficientnet-b7
+  encoder_name: tu-convnext_small
   encoder_depth: 5
   encoder_weights: imagenet
   in_channels: *in_channels

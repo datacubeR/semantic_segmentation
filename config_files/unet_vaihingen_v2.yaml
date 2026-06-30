@@ -1,9 +1,9 @@
 checkpoint_path: null
 
 debug: false
-model_name: &model_name swin
+model_name: &model_name unet
 dataset_name: Vaihingen
-version: v1
+version: v2
 max_epochs: 50
 save_top_k: 3
 batch_size: 32
@@ -19,11 +19,14 @@ n_classes: &n_classes 6
 patch_size: 256
 overlap: 128
 
-loss_function: null ## cross_entropy, dice_loss, focal_loss, null, etc.
-loss_kwargs: null
+loss_function: cross_entropy ## cross_entropy, dice_loss, focal_loss, etc.
+loss_kwargs:
+  ignore_index: -100
 
 model: *model_name
 model_kwargs:
-  pretrained_model_name_or_path: "openmmlab/upernet-swin-tiny"
-  num_labels: *n_classes
-  ignore_mismatched_sizes: true
+  encoder_name: efficientnet-b7
+  encoder_depth: 5
+  encoder_weights: imagenet
+  in_channels: *in_channels
+  classes: *n_classes
