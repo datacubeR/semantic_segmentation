@@ -1,9 +1,8 @@
 checkpoint_path: null
 
 debug: false
-model_name: &model_name unet
+model_name: &model_name segformer
 dataset_name: Vaihingen
-version: v1
 max_epochs: 50
 save_top_k: 3
 batch_size: 32
@@ -28,7 +27,7 @@ loss_kwargs:
 
 model: *model_name
 model_kwargs:
-  encoder_name: efficientnet-b7
+  encoder_name: mit_b4
   encoder_depth: 5
   encoder_weights: imagenet
   in_channels: *in_channels

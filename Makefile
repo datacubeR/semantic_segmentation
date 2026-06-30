@@ -11,6 +11,7 @@ VAL_SHARDS ?= 10
 TEST_SHARDS ?= 10
 CONFIG_PATH ?= config_files
 CONFIG_NAME ?= 
+VERSION ?= 
 
 vaihingen-split:
 	uv run -m splitters.dataset_splitter --dataset-folder "Vaihingen_dataset" --image-folder "top" --mask-folder "labels" --train-size 0.8 --test-size 0.2
@@ -38,7 +39,7 @@ hf:
 # 	uv run -m src.loveda_hf_dataset
 
 train:
-	uv run -m src.trainer --config $(CONFIG_PATH)/$(CONFIG_NAME).yaml
+	uv run -m src.trainer --config $(CONFIG_PATH)/$(VERSION)/$(CONFIG_NAME).yaml
 
 # train-segnet-vaihingen-v1:
 # 	uv run -m src.trainer --config config_files/segnet_vaihingen_v1.yaml

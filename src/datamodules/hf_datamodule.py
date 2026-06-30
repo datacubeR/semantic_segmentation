@@ -17,7 +17,7 @@ class HFDataModule(L.LightningDataModule):
         if stage in ["fit", "validate"]:
             self.val_dataset = self._load_shards_into_dataset(self.hparams.val_path)
 
-        if stage in ["test"]:
+        if stage in ["test", "predict"]:
             self.test_dataset = self._load_shards_into_dataset(self.hparams.test_path)
 
     def train_dataloader(self):
@@ -40,6 +40,15 @@ class HFDataModule(L.LightningDataModule):
         )
 
     def test_dataloader(self):
+        return DataLoader(
+            self.test_dataset,
+            batch_size=1,
+            shuffle=False,
+            num_workers=10,
+            pin_memory=True,
+        )
+
+    def predict_dataloader(self):
         return DataLoader(
             self.test_dataset,
             batch_size=1,

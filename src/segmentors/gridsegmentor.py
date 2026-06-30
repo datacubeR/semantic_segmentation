@@ -18,7 +18,6 @@ class GridSegmentor(L.LightningModule):
         self,
         model: nn.Module,
         n_classes: int,
-        image_processor: nn.Module | None = None,
         criterion: nn.Module | None = None,
         hf_model: str | None = None,
         patch_size: int = 256,
@@ -29,7 +28,6 @@ class GridSegmentor(L.LightningModule):
     ):
         super().__init__()
         self.model = model.train()
-        self.image_processor = image_processor
         self.criterion = criterion
         self.hf_model = hf_model
 
@@ -79,9 +77,6 @@ class GridSegmentor(L.LightningModule):
 
         return self.model(x)
 
-    # def forward(self, **kwargs):
-    #     return self.model(**kwargs)
-
     def training_step(self, batch, batch_idx):
         X, y = batch["image"], batch["mask"]
 
@@ -89,10 +84,6 @@ class GridSegmentor(L.LightningModule):
             output = self(X, labels=y)
             loss, logits = output.loss, output.logits
 
-        # elif self.hf_model == "mask2former":
-        #     inputs = self.image_processor(X, segmentation_maps=y, return_tensors="pt")
-        #     outputs = self(**inputs)
-        #     loss = outputs.loss
         else:
             logits = self(X)
             loss = self.criterion(logits, y)
@@ -125,11 +116,6 @@ class GridSegmentor(L.LightningModule):
         )
 
         self.val_metrics.update(y_hat, gt)
-        # self.accuracy.update(y_hat, gt)
-        # self.recall.update(y_hat, gt)
-        # self.precision.update(y_hat, gt)
-        # self.f1.update(y_hat, gt)
-        # self.miou.update(y_hat, gt)
         return None
 
     def test_step(self, batch, batch_idx):
@@ -151,12 +137,18 @@ class GridSegmentor(L.LightningModule):
 
         self.test_metrics.update(y_hat, gt)
 
-        # self.accuracy.update(y_hat, gt)
-        # self.recall.update(y_hat, gt)
-        # self.precision.update(y_hat, gt)
-        # self.f1.update(y_hat, gt)
-        # self.miou.update(y_hat, gt)
         return None
+
+    def predict_step(self, batch, batch_idx):
+        image, mask = (
+            batch["image"].unsqueeze(-1).squeeze(0),
+            batch["mask"].unsqueeze(-1),
+        )
+
+        _, y_hat = self._forward_grid_batch(image, mask)
+        gt = mask.squeeze(-1).long()
+
+        return y_hat, gt
 
     def _forward_grid_batch(self, image, mask):
 
@@ -186,17 +178,6 @@ class GridSegmentor(L.LightningModule):
                     output = self(X, labels=y)
                     loss, logits = output.loss, output.logits
 
-                # elif self.hf_model == "mask2former":
-                #     inputs = self.image_processor(
-                #         X, segmentation_maps=y, return_tensors="pt"
-                #     )
-                #     outputs = self(**inputs)
-                #     loss = outputs.loss
-                #     logits = self._post_process(
-                #         outputs,
-                #         patch_size=self.hparams.patch_size,
-                #         batch_size=X.shape[0],
-                #     )
                 else:
                     logits = self(X)
                     loss = self.criterion(logits, y)
@@ -211,9 +192,6 @@ class GridSegmentor(L.LightningModule):
         avg_loss = total_loss / n_patches
         full_pred = aggregator.get_output_tensor().squeeze(-1)
 
-        # if self.hf_model == "mask2former":
-        #     y_hat = full_pred.long().to(self.device)
-        # else:
         y_hat = full_pred.argmax(dim=0).unsqueeze(0).to(self.device)
         return avg_loss, y_hat
 
@@ -228,76 +206,6 @@ class GridSegmentor(L.LightningModule):
             self.test_metrics.compute(), prog_bar=True, logger=True, batch_size=1
         )
         self.test_metrics.reset()
-
-    # def on_validation_epoch_end(self):
-    # accuracy = self.accuracy.compute()
-    # recall = self.recall.compute()
-    # precision = self.precision.compute()
-    # f1 = self.f1.compute()
-    # miou = self.miou.compute()
-
-    # self.log(
-    #     "metrics/val_iou",
-    #     miou,
-    #     on_epoch=True,
-    #     prog_bar=True,
-    #     batch_size=1,
-    #     logger=True,
-    # )
-    # self.log(
-    #     "metrics/val_accuracy",
-    #     accuracy,
-    #     on_epoch=True,
-    #     prog_bar=False,
-    #     batch_size=1,
-    #     logger=True,
-    # )
-    # self.log(
-    #     "metrics/val_recall",
-    #     recall,
-    #     on_epoch=True,
-    #     prog_bar=False,
-    #     batch_size=1,
-    #     logger=True,
-    # )
-    # self.log(
-    #     "metrics/val_precision",
-    #     precision,
-    #     on_epoch=True,
-    #     prog_bar=False,
-    #     batch_size=1,
-    #     logger=True,
-    # )
-    # self.log(
-    #     "metrics/val_f1",
-    #     f1,
-    #     on_epoch=True,
-    #     prog_bar=True,
-    #     batch_size=1,
-    #     logger=True,
-    # )
-    # self.accuracy.reset()
-    # self.recall.reset()
-    # self.precision.reset()
-    # self.f1.reset()
-    # self.miou.reset()
-
-    # def on_fit_start(self):
-    #     self.val_metrics = self.val_metrics.to(self.device)
-    #     self.test_metrics = self.test_metrics.to(self.device)
-
-    # def on_fit_start(self):
-    #     self.f1 = self.f1.to(self.device)
-    #     self.accuracy = self.accuracy.to(self.device)
-    #     self.recall = self.recall.to(self.device)
-    #     self.precision = self.precision.to(self.device)
-    #     self.miou = self.miou.to(self.device)
-
-    # def _post_process(self, output, patch_size, batch_size):
-    #     processor_output = self.image_processor.post_process_semantic_segmentation(
-    #         output, target_sizes=[(patch_size, patch_size)] * batch_size
-    #     )
-    #     return torch.stack(processor_output).unsqueeze(1)
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(

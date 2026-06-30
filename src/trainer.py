@@ -12,9 +12,9 @@ import torch
 import yaml
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import TensorBoardLogger
+from pydantic import ValidationError
 from rich import print
 from torchinfo import summary
-from transformers import AutoImageProcessor
 
 from .config import TrainConfig
 from .datamodules import HFDataModule
@@ -40,24 +40,29 @@ with open(args.config, "r") as f:
     config = yaml.safe_load(f)
 
 config_path = Path(args.config)
-if not config_path.exists():
-    raise FileNotFoundError("Config file not found")
-else:
-    print(
-        f"[bold green]Config file loaded successfully from {args.config}[/bold green]"
+VERSION = config_path.parent.name
+
+try:
+    if not config_path.exists():
+        raise FileNotFoundError("Config file not found")
+    else:
+        print(
+            f"[bold green]Config file loaded successfully from {args.config}[/bold green]"
+        )
+    cfg = TrainConfig(**config)
+except ValidationError as e:
+    notify(
+        f"❌ Invalid Configuration for {args.config}.",
+        title="Training Failed",
+        priority="5",
     )
-cfg = TrainConfig(**config)
+    print(e)
+    sys.exit(1)
 
 L.seed_everything(42)
 
 print("[bold magenta]Initializing Model...[/bold magenta]")
 model = get_model(cfg.model, **cfg.model_kwargs.model_dump())
-
-image_processor = None
-if cfg.model_name == "mask2former":
-    image_processor = AutoImageProcessor.from_pretrained(
-        cfg.model_kwargs.pretrained_model_name_or_path
-    )
 
 time.sleep(3)
 os.system("cls" if os.name == "nt" else "clear")
@@ -81,7 +86,7 @@ val_path = f"{cfg.dataset_name}_HF/{cfg.dataset_name}_validation/*"
 test_path = f"{cfg.dataset_name}_HF/{cfg.dataset_name}_test/*"
 
 
-dirpath = Path(f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{cfg.version}")
+dirpath = Path(f"l_checkpoints/{cfg.dataset_name}/{cfg.model_name}/{VERSION}")
 
 iou_checkpoint_callback = ModelCheckpoint(
     dirpath=dirpath,
@@ -116,7 +121,7 @@ precision_checkpoint_callback = ModelCheckpoint(
 recall_checkpoint_callback = ModelCheckpoint(
     dirpath=dirpath,
     filename="best_recall_{val_metrics/recall:.4f}",
-    save_top_k=1,
+    save_top_k=cfg.save_top_k,
     monitor="val_metrics/recall",
     mode="max",
     save_last=True,
@@ -126,7 +131,7 @@ recall_checkpoint_callback = ModelCheckpoint(
 accuracy_checkpoint_callback = ModelCheckpoint(
     dirpath=dirpath,
     filename="best_accuracy_{val_metrics/accuracy:.4f}",
-    save_top_k=1,
+    save_top_k=cfg.save_top_k,
     monitor="val_metrics/accuracy",
     mode="max",
     save_last=True,
@@ -135,7 +140,7 @@ accuracy_checkpoint_callback = ModelCheckpoint(
 
 logger = TensorBoardLogger(
     save_dir="tb_logs",
-    version=cfg.version,
+    version=VERSION,
     name=f"{cfg.dataset_name}_{cfg.model_name}",
     default_hp_metric=False,
 )
@@ -147,7 +152,6 @@ segmentation_model = GridSegmentor(
     model,
     n_classes=cfg.n_classes,
     criterion=cfg.get_loss(),
-    image_processor=image_processor,
     hf_model=cfg.model,
     batch_size=cfg.batch_size,
     patch_size=cfg.patch_size,
@@ -232,6 +236,6 @@ if __name__ == "__main__":
         print(f"[bold red]Error during training:\n{error_msg}[/bold red]")
         notify(
             "❌ Go to the Computer and check the logs for more information.",
-            title=f"{cfg.model_name}_{cfg.dataset_name}_{cfg.version} - Training Failed",
+            title=f"{cfg.model_name}_{cfg.dataset_name}_{VERSION} - Training Failed",
             priority="5",
         )
