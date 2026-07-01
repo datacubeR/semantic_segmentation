@@ -3,6 +3,7 @@ import glob
 from pathlib import Path
 
 from rich import print
+from sklearn.model_selection import train_test_split
 from torchgeo.datasets import LoveDA
 
 from .split_utils import create_split_folders
@@ -31,32 +32,25 @@ if __name__ == "__main__":
             scene=["urban", "rural"],
             download=True,
         )
-        val_data = LoveDA(
+        dev_data = LoveDA(
             root=DATASET_NAME,
             split="val",
             scene=["urban", "rural"],
             download=True,
         )
-        test_data = LoveDA(
-            root=DATASET_NAME,
-            split="test",
-            scene=["urban", "rural"],
-            download=True,
-        )
-
         train_images = [
             Path(p) for p in glob.glob(f"{DATASET_NAME}/Train/*/images_png/*")
         ]
-        val_images = [Path(p) for p in glob.glob(f"{DATASET_NAME}/Val/*/images_png/*")]
-        test_images = [
-            Path(p) for p in glob.glob(f"{DATASET_NAME}/Test/*/images_png/*")
-        ]
-
-        val_masks = [Path(p) for p in glob.glob(f"{DATASET_NAME}/Val/*/masks_png/*")]
         train_masks = [
             Path(p) for p in glob.glob(f"{DATASET_NAME}/Train/*/masks_png/*")
         ]
-        test_masks = [Path(p) for p in glob.glob(f"{DATASET_NAME}/Test/*/masks_png/*")]
+
+        dev_images = [Path(p) for p in glob.glob(f"{DATASET_NAME}/Val/*/images_png/*")]
+        dev_masks = [Path(p) for p in glob.glob(f"{DATASET_NAME}/Val/*/masks_png/*")]
+
+        val_images, test_images, val_masks, test_masks = train_test_split(
+            dev_images, dev_masks, test_size=0.3, random_state=42
+        )
 
         print(
             f"[bold yellow] The process with create {len(train_images)} training images, {len(val_images)} validation images, and {len(test_images)} test images.[/bold yellow]"
