@@ -9,9 +9,9 @@ TR ?= 1
 TRAIN_SHARDS ?= 5000
 VAL_SHARDS ?= 10
 TEST_SHARDS ?= 10
-CONFIG_PATH ?= config_files
-CONFIG_NAME ?= 
 VERSION ?= 
+DATASET ?= 
+MODEL ?= 
 
 vaihingen-split:
 	uv run -m splitters.dataset_splitter --dataset-folder "Vaihingen_dataset" --image-folder "top" --mask-folder "labels" --train-size 0.8 --test-size 0.2
@@ -20,7 +20,7 @@ potsdam-split:
 	uv run -m splitters.dataset_splitter --dataset-folder "Potsdam_dataset" --image-folder "2_Ortho_RGB" --mask-folder "5_Labels_all" --train-size 0.8 --test-size 0.2
 
 loveda-split:
-	uv run -m splitters.loveda_dataset_splitter --dataset-folder loveda_dataset
+	uv run -m splitters.loveda_dataset_splitter --dataset-folder LoveDA
 
 deadtrees-split:
 	uv run -m splitters.deadtrees_dataset_splitter --dataset-folder "DeadTrees" --image-folder "dataset_rgb" --mask-folder "dataset_binary" --train-size 0.8 --test-size 0.2
@@ -39,7 +39,13 @@ hf:
 # 	uv run -m src.loveda_hf_dataset
 
 train:
-	uv run -m src.trainer --config $(CONFIG_PATH)/$(VERSION)/$(CONFIG_NAME).yaml
+	@if [ "$(DATASET)" = "loveda" ] || [ "$(DATASET)" = "deadtrees" ]; then \
+		uv run -m src.simpletrainer --model $(MODEL) --dataset $(DATASET) --version $(VERSION); \
+	else \
+		uv run -m src.gridtrainer --model $(MODEL) --dataset $(DATASET) --version $(VERSION); \
+	fi
+
+
 
 # train-segnet-vaihingen-v1:
 # 	uv run -m src.trainer --config config_files/segnet_vaihingen_v1.yaml

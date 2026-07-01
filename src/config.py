@@ -60,10 +60,12 @@ class TrainConfig(BaseModel):
     in_channels: int
     n_classes: int
 
-    patch_size: int
-    overlap: int
+    patch_size: Optional[int] = None
+    overlap: Optional[int] = None
+    image_size: Optional[int] = None
 
     batch_size: int
+    val_test_batch_size: int = 1
     max_epochs: int
     grad_accumulation_batches: int
 

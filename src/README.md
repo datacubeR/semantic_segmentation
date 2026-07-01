@@ -14,6 +14,8 @@ The arguments for this process are as follows:
 `VT` is an optional flag. If set to 1, it will create validation and test sets. Sometimes this not desired if creating several patches sizes, since the Validation and Test won't use patches but the original ortophotos. Default is 0.
 `TR` is an optional flag. If set to 1, it will create the training set. This is useful if you want to create several patch sizes, since the training set is the one that uses patches. Default is 1.
 
+> This process is only suitable for big images. In our case we applied this process only for Vaihingen and Potsdam dataset.
+
 ## TL;DR:
 
 The Hugging Face Arrow dataset format improves memory efficiency at the cost of increased disk usage. To mitigate memory constraints during dataset generation, the conversion process is performed in shards. Depending on the available system memory, you may need to experiment with different shard sizes, particularly for the training split.
@@ -24,17 +26,18 @@ Some values that worked well for me are the following:
 |-----------|------------------|---------------------|
 | Vaihingen | 5000             | 10                |
 | Potsdam   | 3000             | 10                |
- This process is sharded, you can find more details in [here](src/README.md).
 
 ## Model Training
 
 You can train any model using the following command:
 
 ```bash
-make train NAME=<dataset_name> CONFIG_NAME=<config_name>
+make train DATASET=<dataset_name> MODEL=<model_name> VERSION=<version>
 ```
 
-Where `CONFIG_NAME` is the name of the configuration file for the model to train. By default the configuration files are stored in `config_files/` but you could use the `CONFIG_PATH` argument to specify a different location.
+Where `DATASET` is the name of Dataset ("Vaihingen", "Potsdam", "LoveDA","DeadTrees"), `MODEL` is the name of the model to train (segnet, unet, unetpp, swin, upernet, dpt, segformer), and `VERSION` is the the number of the version. Version refers to a set hyperparameters to train a model.
+
+To make a model available to train you need to have a Configuration File in `config_files/<version>/<model_name>_<config_name>_v<version>yaml`.
 
 The Model includes automatic Checkpointing, and Tensorboard Logging. To learn more about the model configuration go [here](config_files/README.md).
 

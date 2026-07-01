@@ -1,4 +1,4 @@
 from .gridsegmentor import GridSegmentor
-from .regular_segmentator import RegularTrainingSegmentator
+from .simple_segmentor import SimpleSegmentor
 
-__all__ = ["RegularTrainingSegmentator", "GridSegmentor"]
+__all__ = ["GridSegmentor", "SimpleSegmentor"]
