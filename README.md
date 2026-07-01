@@ -2,6 +2,15 @@
 
 These are all the experiments conducted for the Chapter 2 of my Phd Thesis.
 
+In order to reproduce this you need `uv`. You need can install it by running: 
+
+bash
+```
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+If using Windows, refer to the [uv Installation Guide](https://docs.astral.sh/uv/getting-started/installation/).
+
 ## Splitters Folder
 
 Contains the code to split the datasets into train, validation and test sets. To understand how it works refer to the [README](splitters/README.md) file in the Splitters Folder.

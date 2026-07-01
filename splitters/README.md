@@ -8,8 +8,9 @@ To split the dataset, use one of the following commands:
 make vaihingen-split
 make potsdam-split
 make deadtrees-split
+make loveda-split
 ```
-Under the hood, the appropriate dataset splitter (`dataset_splitter.py` or `deadtrees_dataset_splitter.py`) is executed with the corresponding arguments for the selected dataset.
+Under the hood, the appropriate dataset splitter (`dataset_splitter.py`,`deadtrees_dataset_splitter.py` or `loveda_dataset_splitter.py`) is executed with the corresponding arguments for the selected dataset.
 
 The arguments for both are as follows: 
 - `--dataset-folder` is the name of the folder containing the dataset.
@@ -20,9 +21,11 @@ The arguments for both are as follows:
 
 > EXAMPLE: If you have 100 images and set `--train-size` to 0.8 and `--test-size` to 0.2, then 80 images will be allocated to the training set. Of the remaining 20 images, 20% (4 images) will be assigned to the test set, while the other 16 images will be used for validation purposes.
 
+> Attention: Not all the arguments are available for each dataset splitter. Refer to the Makefile to see which arguments are supported for each splitter.
+
 ## TL;DR
 
-For example the command `make vaihingen-split` will run the following command:
+For example the command `make vaihingen-split` will run the following command under the hood:
 
 ```bash
 uv run -m splitters.dataset_splitter --dataset-folder "Vaihingen_dataset" --image-folder "top" --mask-folder "labels" --train-size 0.8 --test-size 0.2

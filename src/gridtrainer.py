@@ -24,35 +24,49 @@ from .segmentors import GridSegmentor
 from .system_callback import SystemMetricsCallback
 from .timing_callback import TimingCallback
 
-# TODO: Add version enhancement...
-
 warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--config", type=str)
+parser.add_argument(
+    "--dataset",
+    type=str,
+    choices=["Vaihingen", "Potsdam", "vaihingen", "potsdam"],
+    required=True,
+)
+parser.add_argument(
+    "--model",
+    type=str,
+    required=True,
+    choices=["segnet", "unet", "unetpp", "upernet", "segformer", "swin", "dpt"],
+)
+parser.add_argument("--version", type=int, required=True)
 args = parser.parse_args()
 
 # ===========================================
 # Configuration Parameters
 # ===========================================
-with open(args.config, "r") as f:
-    config = yaml.safe_load(f)
+os.system("cls" if os.name == "nt" else "clear")
+print("[bold yellow]Starting Grid Training...[/bold yellow]")
 
-config_path = Path(args.config)
-VERSION = config_path.parent.name
+config_path = f"config_files/v{args.version}/{args.model.lower()}_{args.dataset.lower()}_v{args.version}.yaml"
+
+if not Path(config_path).exists():
+    raise FileNotFoundError("Config file not found")
+else:
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    VERSION = f"v{args.version}"
+    print(
+        f"[bold green]Config file loaded successfully from {Path(config_path).name}[/bold green]"
+    )
 
 try:
-    if not config_path.exists():
-        raise FileNotFoundError("Config file not found")
-    else:
-        print(
-            f"[bold green]Config file loaded successfully from {args.config}[/bold green]"
-        )
     cfg = TrainConfig(**config)
 except ValidationError as e:
     notify(
-        f"❌ Invalid Configuration for {args.config}.",
+        f"❌ Invalid Configuration for {Path(config_path).name}.",
         title="Training Failed",
         priority="5",
     )
@@ -64,8 +78,6 @@ L.seed_everything(42)
 print("[bold magenta]Initializing Model...[/bold magenta]")
 model = get_model(cfg.model, **cfg.model_kwargs.model_dump())
 
-time.sleep(3)
-os.system("cls" if os.name == "nt" else "clear")
 m_summary = str(
     summary(
         model,
@@ -74,6 +86,7 @@ m_summary = str(
     )
 )
 print(f"[bold blue]{m_summary}[/bold blue]")
+time.sleep(3)
 
 if config["debug"]:
     print("[bold cyan]Debug Mode...[/bold cyan]")

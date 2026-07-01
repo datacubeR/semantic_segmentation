@@ -7,10 +7,17 @@ from .basevision import BaseVisionDataset
 
 
 class BaseRSDataset(BaseVisionDataset):
-    def __init__(self, image_glob, mask_glob, reduce_mask=False):
+    def __init__(
+        self,
+        image_glob: str,
+        mask_glob: str,
+        reduce_mask: bool = False,
+        squeeze_mask: bool = False,
+    ):
         self.image_paths = sorted(glob.glob(image_glob))
         self.mask_paths = sorted(glob.glob(mask_glob))
         self.reduce_mask = reduce_mask
+        self.squeeze_mask = squeeze_mask
 
     def __len__(self):
         return len(self.image_paths)
@@ -31,5 +38,7 @@ class BaseRSDataset(BaseVisionDataset):
 
         img = torch.from_numpy(image).float()
         mask = torch.from_numpy(mask).unsqueeze(0).long()  # Masks should be Integers
+        if self.squeeze_mask:
+            mask = mask.squeeze(0)
 
         return dict(image=img, mask=mask)
