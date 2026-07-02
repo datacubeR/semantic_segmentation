@@ -35,9 +35,9 @@ You can train any model using the following command:
 make train DATASET=<dataset_name> MODEL=<model_name> VERSION=<version>
 ```
 
-Where `DATASET` is the name of Dataset ("Vaihingen", "Potsdam", "LoveDA","DeadTrees"), `MODEL` is the name of the model to train (segnet, unet, unetpp, swin, upernet, dpt, segformer), and `VERSION` is the the number of the version. Version refers to a set hyperparameters to train a model.
+Where `DATASET` is one of (Vaihingen, Potsdam, LoveDA, DeadTrees), `MODEL` is the model to train (segnet, unet, unetpp, swin, upernet, dpt, segformer), and `VERSION` is the numeric version (e.g., 3).
 
-To make a model available to train you need to have a Configuration File in `config_files/<version>/<model_name>_<config_name>_v<version>yaml`.
+To make a model available to train, add a config at `config_files/v<VERSION>/<model>_<dataset>_v<VERSION>.yaml`.
 
 The Model includes automatic Checkpointing, and Tensorboard Logging. To learn more about the model configuration go [here](config_files/README.md).
 

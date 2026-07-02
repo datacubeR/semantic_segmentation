@@ -13,6 +13,8 @@ class SimpleDataModule(L.LightningDataModule):
             extension = "tif"
         elif dataset_name == "LoveDA":
             extension = "png"
+        else:
+            raise ValueError(f"Unsupported dataset_name: {dataset_name}")
 
         self.train_image_glob = f"{dataset_name}/train/images/*.{extension}"
         self.train_mask_glob = f"{dataset_name}/train/masks/*.{extension}"

@@ -210,7 +210,7 @@ if __name__ == "__main__":
             )
         start_time = time.time()
 
-        if dirpath.exists():
+        if cfg.checkpoint_path is None and dirpath.exists():
             shutil.rmtree(dirpath)
         trainer.fit(segmentation_model, datamodule=dm, ckpt_path=cfg.checkpoint_path)
 

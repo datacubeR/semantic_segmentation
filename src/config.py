@@ -6,13 +6,14 @@ from pydantic import BaseModel
 
 
 class CrossEntropyLossConfig(BaseModel):
-    label_smoothing: float = 0.0
+    ignore_index: int = -100
 
 
 class DiceLossConfig(BaseModel):
     mode: Literal["binary", "multiclass", "multilabel"]
     smooth: float = 0.0
     from_logits: bool
+    ignore_index: Optional[int] = None
 
 
 class FocalLossConfig(BaseModel):
@@ -41,6 +42,7 @@ class HFTransformersConfig(BaseModel):
     pretrained_model_name_or_path: str
     num_labels: int
     ignore_mismatched_sizes: bool = True
+    loss_ignore_index: int = 255
 
 
 ModelKwargs = Union[SegnetConfig, SMPConfig, HFTransformersConfig]
@@ -52,7 +54,7 @@ class TrainConfig(BaseModel):
     debug: bool
 
     model_name: Literal[
-        "unet", "unetpp", "swin", "upernet", "segformer", "segnet", "mask2former"
+        "unet", "unetpp", "swin", "upernet", "segformer", "segnet", "dpt"
     ]
     dataset_name: Literal["Vaihingen", "DeadTrees", "Potsdam", "LoveDA"]
     save_top_k: int

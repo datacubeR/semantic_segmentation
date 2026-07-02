@@ -7,6 +7,7 @@ class FullImageDataset(BaseRSDataset):
         class_names = ["Non-Dead Tree", "Dead Tree"]
         return class_names
 
+    @property
     def get_loveda_class_names(self):
         class_names = [
             "Ignore",
