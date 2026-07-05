@@ -38,18 +38,22 @@ if __name__ == "__main__":
             scene=["urban", "rural"],
             download=True,
         )
-        train_images = [
-            Path(p) for p in glob.glob(f"{DATASET_NAME}/Train/*/images_png/*")
-        ]
-        train_masks = [
-            Path(p) for p in glob.glob(f"{DATASET_NAME}/Train/*/masks_png/*")
-        ]
+        train_images = sorted(
+            [Path(p) for p in glob.glob(f"{DATASET_NAME}/Train/*/images_png/*")]
+        )
+        train_masks = sorted(
+            [Path(p) for p in glob.glob(f"{DATASET_NAME}/Train/*/masks_png/*")]
+        )
 
-        dev_images = [Path(p) for p in glob.glob(f"{DATASET_NAME}/Val/*/images_png/*")]
-        dev_masks = [Path(p) for p in glob.glob(f"{DATASET_NAME}/Val/*/masks_png/*")]
+        dev_images = sorted(
+            [Path(p) for p in glob.glob(f"{DATASET_NAME}/Val/*/images_png/*")]
+        )
+        dev_masks = sorted(
+            [Path(p) for p in glob.glob(f"{DATASET_NAME}/Val/*/masks_png/*")]
+        )
 
         val_images, test_images, val_masks, test_masks = train_test_split(
-            dev_images, dev_masks, test_size=0.3, random_state=42
+            dev_images, dev_masks, test_size=0.3, random_state=42, shuffle=True
         )
 
         print(
