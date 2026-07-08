@@ -240,7 +240,7 @@ if __name__ == "__main__":
         )
         notify(
             f"✅\n\n Training Time: {(end_time - start_time) / 60:.2f} mins. \n\n Validation IoU: {iou_checkpoint_callback.best_model_score.item():.3f}.",
-            title=f"{cfg.model_name}_{cfg.dataset_name}_{cfg.version} - Training Completed",
+            title=f"{cfg.model_name}_{cfg.dataset_name}_{VERSION} - Training Completed",
             priority="5",
         )
 
