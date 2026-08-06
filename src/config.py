@@ -54,7 +54,7 @@ class TrainConfig(BaseModel):
     debug: bool
 
     model_name: Literal[
-        "unet", "unetpp", "swin", "upernet", "segformer", "segnet", "dpt"
+        "unet", "unetpp", "swin", "upernet", "segformer", "segnet", "dpt", "deeplab"
     ]
     dataset_name: Literal["Vaihingen", "DeadTrees", "Potsdam", "LoveDA"]
     save_top_k: int

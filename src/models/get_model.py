@@ -12,6 +12,7 @@ def get_model(name, **model_kwargs):
         upernet=smp.UPerNet,
         segformer=smp.Segformer,
         dpt=smp.DPT,
+        deeplab=smp.DeeplabV3Plus
     )
     if name not in ["swin"]:
         return model[name](**model_kwargs)

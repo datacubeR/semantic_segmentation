@@ -3,13 +3,14 @@
 DATASET="deadtrees"
 
 MODELS=(
-    segnet
-    unet
-    unetpp
-    segformer
-    upernet
-    swin
-    dpt
+    # segnet
+    # unet
+    # unetpp
+    # segformer
+    # upernet
+    # swin
+    # dpt
+    deeplab
 )
 
 VERSIONS=(
@@ -36,7 +37,7 @@ for VERSION in "${VERSIONS[@]}"; do
         fi
 
         echo "Running ${MODEL}_${DATASET}_v${VERSION}"
-        make train DATASET="$DATASET" MODEL="$MODEL" VERSION="$VERSION"
+        # make train DATASET="$DATASET" MODEL="$MODEL" VERSION="$VERSION"
     done
 done
 

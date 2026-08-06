@@ -38,7 +38,7 @@ parser.add_argument(
     "--model",
     type=str,
     required=True,
-    choices=["segnet", "unet", "unetpp", "upernet", "segformer", "swin", "dpt"],
+    choices=["segnet", "unet", "unetpp", "upernet", "segformer", "swin", "dpt", "deeplab"],
 )
 parser.add_argument("--version", type=int, required=True)
 args = parser.parse_args()

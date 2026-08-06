@@ -1,0 +1,33 @@
+checkpoint_path: null
+
+debug: false
+model_name: &model_name deeplab
+dataset_name: DeadTrees
+max_epochs: 50
+save_top_k: 1
+batch_size: 32
+val_test_batch_size: 32
+grad_accumulation_batches: 2
+lr: 1e-3
+weight_decay: 1e-4
+precision: bf16-mixed
+
+in_channels: &in_channels 3
+n_classes: &n_classes 2
+
+###############################
+# Parámetros Modificables:
+###############################
+image_size: 256
+
+loss_function: cross_entropy ## cross_entropy, dice_loss, focal_loss, etc.
+loss_kwargs:
+  ignore_index: -100
+
+model: *model_name
+model_kwargs:
+  encoder_name: efficientnet-b7
+  encoder_depth: 5
+  encoder_weights: imagenet
+  in_channels: *in_channels
+  classes: *n_classes

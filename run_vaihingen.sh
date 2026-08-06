@@ -1,21 +1,44 @@
 #!/usr/bin/env bash
 
-configs=(
-#   segnet_vaihingen_v1
-  unet_vaihingen_v1
-#   unetpp_vaihingen_v1
-#   segformer_vaihingen_v1
-  upernet_vaihingen_v1
-#   swin_vaihingen_v1
-#   segnet_vaihingen_v2
-  unet_vaihingen_v2
-#   unetpp_vaihingen_v2
-#   segformer_vaihingen_v2
-  upernet_vaihingen_v2
+DATASET="vaihingen"
+
+MODELS=(
+    # segnet
+    # unet
+    # unetpp
+    # segformer
+    # upernet
+    # swin
+    dpt
+    deeplab
 )
 
-for cfg in "${configs[@]}"; do
-  make train CONFIG_NAME="$cfg"
+VERSIONS=(
+    1
+    2
+)
+
+# Combinaciones a omitir: MODEL_VERSION
+EXCEPTIONS=(
+    "swin_14"
+    "segnet_13"
+    # "dpt_13"
+    # "segformer_14"
+)
+
+for VERSION in "${VERSIONS[@]}"; do
+    for MODEL in "${MODELS[@]}"; do
+        COMBINATION="${MODEL}_${VERSION}"
+
+        # Skip if the combination is in the exceptions list
+        if [[ " ${EXCEPTIONS[*]} " =~ " ${COMBINATION} " ]]; then
+            echo "Skipping ${MODEL}_${DATASET}_v${VERSION}"
+            continue
+        fi
+
+        echo "Running ${MODEL}_${DATASET}_v${VERSION}"
+        # make train DATASET="$DATASET" MODEL="$MODEL" VERSION="$VERSION"
+    done
 done
 
 echo "All experiments processed."
