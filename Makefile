@@ -12,6 +12,7 @@ TEST_SHARDS ?= 10
 VERSION ?= 
 DATASET ?= 
 MODEL ?= 
+METRIC ?= miou
 
 vaihingen-split:
 	uv run -m splitters.dataset_splitter --dataset-folder "Vaihingen_dataset" --image-folder "top" --mask-folder "labels" --train-size 0.8 --test-size 0.2
@@ -45,25 +46,5 @@ train:
 		uv run -m src.gridtrainer --model $(MODEL) --dataset $(DATASET) --version $(VERSION); \
 	fi
 
-
-
-# train-segnet-vaihingen-v1:
-# 	uv run -m src.trainer --config config_files/segnet_vaihingen_v1.yaml
-
-# train-unet-vaihingen-v1:
-# 	uv run -m src.trainer --config config_files/unet_vaihingen_v1.yaml
-
-# train-unetpp-vaihingen-v1:
-# 	uv run -m src.trainer --config config_files/unetpp_vaihingen_v1.yaml
-
-# train-upernet-vaihingen-v1:
-# 	uv run -m src.trainer --config config_files/upernet_vaihingen_v1.yaml
-
-# train-segformer-vaihingen-v1:
-# 	uv run -m src.trainer --config config_files/segformer_vaihingen_v1.yaml
-
-# train-swin-vaihingen-v1:
-# 	uv run -m src.trainer --config config_files/swin_vaihingen_v1.yaml
-
-# train-mask2former-vaihingen-v1:
-# 	uv run -m src.trainer --config config_files/mask2former_vaihingen_v1.yaml
+results:
+	uv run -m src.extracting_checkpoints_results --dataset $(DATASET) --metric $(METRIC)
