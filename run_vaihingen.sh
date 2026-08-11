@@ -14,7 +14,7 @@ MODELS=(
 )
 
 VERSIONS=(
-    1
+    # 1
     2
 )
 
@@ -37,7 +37,7 @@ for VERSION in "${VERSIONS[@]}"; do
         fi
 
         echo "Running ${MODEL}_${DATASET}_v${VERSION}"
-        # make train DATASET="$DATASET" MODEL="$MODEL" VERSION="$VERSION"
+        make train DATASET="$DATASET" MODEL="$MODEL" VERSION="$VERSION"
     done
 done
 
