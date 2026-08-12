@@ -20,6 +20,16 @@ n_classes: &n_classes 2
 ###############################
 image_size: 256
 
+use_scheduler: false
+scheduler_monitor: val_metrics/miou
+lr_scheduler_kwargs: 
+  mode: max
+  factor: 0.5
+  patience: 5
+  threshold: 0.005
+  threshold_mode: abs
+  min_lr: 1e-6
+
 loss_function: cross_entropy ## cross_entropy, dice_loss, focal_loss, etc.
 loss_kwargs:
   ignore_index: -100

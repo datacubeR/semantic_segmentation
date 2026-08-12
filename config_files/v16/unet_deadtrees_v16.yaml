@@ -16,7 +16,7 @@ in_channels: &in_channels 3
 n_classes: &n_classes 2
 
 ###############################
-# Parámetros Modificables:
+# Modifiable Parameters:
 ###############################
 image_size: 256
 

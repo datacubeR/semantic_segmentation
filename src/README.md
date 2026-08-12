@@ -35,12 +35,21 @@ You can train any model using the following command:
 make train DATASET=<dataset_name> MODEL=<model_name> VERSION=<version>
 ```
 
-Where `DATASET` is one of (Vaihingen, Potsdam, LoveDA, DeadTrees), `MODEL` is the model to train (segnet, unet, unetpp, swin, upernet, dpt, segformer), and `VERSION` is the numeric version (e.g., 3).
+Where `DATASET` is one of (Vaihingen, Potsdam, LoveDA, DeadTrees), `MODEL` is the model to train (segnet, unet, unetpp, swin, upernet, dpt, segformer, deeplab), and `VERSION` is the numeric version (e.g., 3).
 
 To make a model available to train, add a config at `config_files/v<VERSION>/<model>_<dataset>_v<VERSION>.yaml`.
 
+Internally, Potsdam and Vaihingen datasets are trained using a `gridtrainer.py`, while LoveDA and DeadTrees datasets are trained using a whole image trainer (`simpletrainer.py`). The model configuration is specified in the corresponding YAML file.
+
 The Model includes automatic Checkpointing, and Tensorboard Logging. To learn more about the model configuration go [here](config_files/README.md).
 
-## Model Validation 
+There are 4 files called `run_deadtrees.sh`, `run_loveda.sh`, `run_potsdam.sh`, and `run_vaihingen.sh`. These files allow to run batch of experiments easily. 
 
-The `Model_Validation.ipynb` notebook allows to validate the trained models. You can specify the checkpoint to validate and the configuration file to use. The notebook will load the model and the dataset, and compute the metrics on the test set.
+## Compiling Results
+
+The results saved in the checkpoints can be compiled using the following command:
+
+```bash
+make results DATASET=<dataset_name> METRIC=<metric>
+```
+By default, the metric is `miou`. The results will be saved in a CSV file called `<dataset_name>.csv` and its saved in the `analysis` folder.

@@ -47,4 +47,4 @@ train:
 	fi
 
 results:
-	uv run -m src.extracting_checkpoints_results --dataset $(DATASET) --metric $(METRIC)
+	uv run -m src.compile_results --dataset $(DATASET) --metric $(METRIC)
