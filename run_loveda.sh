@@ -14,7 +14,7 @@ MODELS=(
 )
 
 VERSIONS=(
-    13
+    # 13
     14
 )
 

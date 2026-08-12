@@ -1,0 +1,33 @@
+checkpoint_path: null
+
+debug: False
+model_name: &model_name segnet
+dataset_name: Vaihingen
+max_epochs: 50
+save_top_k: 1
+batch_size: 32
+grad_accumulation_batches: 32
+lr: 1e-3
+weight_decay: 1e-4
+precision: bf16-mixed
+
+in_channels: &in_channels 3
+n_classes: &n_classes 6
+
+###############################
+# Parámetros Modificables:
+###############################
+patch_size: 256
+overlap: 128
+
+loss_function: dice_loss ## cross_entropy, dice_loss, focal_loss, etc.
+loss_kwargs:
+  mode: multiclass
+  classes: *n_classes
+  from_logits: true
+  smooth: 1e-8
+
+model: *model_name
+model_kwargs:
+  in_channels: *in_channels
+  out_channels: *n_classes
