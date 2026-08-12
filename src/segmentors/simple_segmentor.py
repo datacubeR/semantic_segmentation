@@ -20,11 +20,17 @@ class SimpleSegmentor(L.LightningModule):
         hf_model: str | None = None,
         lr: float = 1e-3,
         weight_decay: float = 1e-4,
+        use_scheduler: bool = False,
+        scheduler_monitor: str | None = None,
+        lr_scheduler_kwargs: dict | None = None,
     ):
         super().__init__()
         self.model = model.train()
         self.criterion = criterion
         self.hf_model = hf_model
+        self.use_scheduler = use_scheduler
+        self.scheduler_monitor = scheduler_monitor
+        self.lr_scheduler_kwargs = lr_scheduler_kwargs
 
         self.val_metrics = MetricCollection(
             {
@@ -63,7 +69,15 @@ class SimpleSegmentor(L.LightningModule):
         )
         self.test_metrics = self.val_metrics.clone(prefix="test_metrics/")
         self.save_hyperparameters(
-            ignore=["model", "criterion", "hf_model", "val_metrics", "test_metrics"]
+            ignore=[
+                "model",
+                "criterion",
+                "hf_model",
+                "val_metrics",
+                "test_metrics",
+                "lr_kwargs",
+                "lr_schedule",
+            ]
         )
 
     def forward(self, x, labels=None):
@@ -140,6 +154,10 @@ class SimpleSegmentor(L.LightningModule):
 
         return loss, y_hat
 
+    def on_train_epoch_end(self):
+        lr = self.trainer.optimizers[0].param_groups[0]["lr"]
+        self.log("learning_rate", lr, prog_bar=True, logger=True)
+
     def on_validation_epoch_end(self):
         self.log_dict(
             self.val_metrics.compute(), prog_bar=True, logger=True, batch_size=1
@@ -158,4 +176,20 @@ class SimpleSegmentor(L.LightningModule):
             lr=self.hparams.lr,
             weight_decay=self.hparams.weight_decay,
         )
-        return optimizer
+
+        if not self.use_scheduler:
+            return optimizer
+
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, **(self.lr_scheduler_kwargs or {})
+        )
+
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": self.scheduler_monitor,
+                "interval": "epoch",
+                "frequency": 1,
+            },
+        }

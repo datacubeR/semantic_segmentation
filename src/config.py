@@ -1,8 +1,12 @@
-from typing import Literal, Optional, Union
+from typing import Literal
 
 import segmentation_models_pytorch as smp
 import torch.nn as nn
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+
+class ConfigBaseModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
 
 class CrossEntropyLossConfig(BaseModel):
@@ -13,16 +17,25 @@ class DiceLossConfig(BaseModel):
     mode: Literal["binary", "multiclass", "multilabel"]
     smooth: float = 0.0
     from_logits: bool
-    ignore_index: Optional[int] = None
+    ignore_index: int | None = None
 
 
 class FocalLossConfig(BaseModel):
     mode: Literal["binary", "multiclass", "multilabel"]
     gamma: float = 2.0
-    alpha: Optional[float] = None
+    alpha: float | None = None
 
 
-LossKwargs = Union[CrossEntropyLossConfig, DiceLossConfig, FocalLossConfig]
+LossKwargs = CrossEntropyLossConfig | DiceLossConfig | FocalLossConfig
+
+
+class LRSchedulerKwargs(BaseModel):
+    mode: str
+    factor: float
+    patience: int
+    threshold: float
+    threshold_mode: str
+    min_lr: float
 
 
 class SegnetConfig(BaseModel):
@@ -35,7 +48,7 @@ class SMPConfig(BaseModel):
     in_channels: int
     classes: int
     encoder_depth: int = 5
-    encoder_weights: Optional[str] = "imagenet"
+    encoder_weights: str | None = "imagenet"
 
 
 class HFTransformersConfig(BaseModel):
@@ -45,11 +58,11 @@ class HFTransformersConfig(BaseModel):
     loss_ignore_index: int = 255
 
 
-ModelKwargs = Union[SegnetConfig, SMPConfig, HFTransformersConfig]
+ModelKwargs = SegnetConfig | SMPConfig | HFTransformersConfig
 
 
-class TrainConfig(BaseModel):
-    checkpoint_path: Optional[str] = None
+class TrainConfig(ConfigBaseModel):
+    checkpoint_path: str | None = None
 
     debug: bool
 
@@ -62,9 +75,13 @@ class TrainConfig(BaseModel):
     in_channels: int
     n_classes: int
 
-    patch_size: Optional[int] = None
-    overlap: Optional[int] = None
-    image_size: Optional[int] = None
+    patch_size: int | None = None
+    overlap: int | None = None
+    image_size: int | None = None
+
+    use_scheduler: bool = False
+    scheduler_monitor: str | None = None
+    lr_scheduler_kwargs: LRSchedulerKwargs
 
     batch_size: int
     val_test_batch_size: int = 1

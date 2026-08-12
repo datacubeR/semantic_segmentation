@@ -38,7 +38,16 @@ parser.add_argument(
     "--model",
     type=str,
     required=True,
-    choices=["segnet", "unet", "unetpp", "upernet", "segformer", "swin", "dpt","deeplab"],
+    choices=[
+        "segnet",
+        "unet",
+        "unetpp",
+        "upernet",
+        "segformer",
+        "swin",
+        "dpt",
+        "deeplab",
+    ],
 )
 parser.add_argument("--version", type=int, required=True)
 args = parser.parse_args()
@@ -171,6 +180,9 @@ segmentation_model = GridSegmentor(
     overlap=cfg.overlap,
     lr=cfg.lr,
     weight_decay=cfg.weight_decay,
+    use_scheduler=cfg.use_scheduler,
+    scheduler_monitor=cfg.scheduler_monitor,
+    lr_scheduler_kwargs=cfg.lr_scheduler_kwargs.model_dump(),
 )
 dm = HFDataModule(
     train_path=train_path,
