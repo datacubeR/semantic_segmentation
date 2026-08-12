@@ -3,27 +3,27 @@
 DATASET="loveda"
 
 MODELS=(
-    # segnet
-    # unet
-    # unetpp
-    # segformer
-    # upernet
-    # swin
-    # dpt
+    segnet
+    unet
+    unetpp
+    segformer
+    upernet
+    swin
+    dpt
     deeplab
 )
 
 VERSIONS=(
     # 13
-    14
+    # 14
+    15
+    16
 )
 
 # Combinaciones a omitir: MODEL_VERSION
 EXCEPTIONS=(
     "swin_14"
-    # "segnet_13"
-    # "dpt_13"
-    # "segformer_14"
+    "swin_16"
 )
 
 for VERSION in "${VERSIONS[@]}"; do
@@ -37,7 +37,7 @@ for VERSION in "${VERSIONS[@]}"; do
         fi
 
         echo "Running ${MODEL}_${DATASET}_v${VERSION}"
-        make train DATASET="$DATASET" MODEL="$MODEL" VERSION="$VERSION"
+        # make train DATASET="$DATASET" MODEL="$MODEL" VERSION="$VERSION"
     done
 done
 

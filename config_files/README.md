@@ -38,7 +38,7 @@ precision: Float number precision. This depends on the GPU used. In my case i us
   * `threshold_mode`: Use `rel` if the threshold is relative to the best value, `abs` if it is an absolute value.
   * `min_lr`: Minimum learning rate. Learning rate will not be reduced below this value.
 
-*  `loss_function`: Loss Function to use. The codebase only supports the following loss functions: `cross_entropy`, `dice`, `focal`.
+*  `loss_function`: Loss Function to use. The codebase only supports the following loss functions: `cross_entropy`, `dice_loss`, `focal_loss`.
 * `loss_kwargs`: Kwargs for the loss function. Refer to Pytorch Docs for what options are available. You can check available config options to check some examples.
 
 * `model`: This model name inherits from the `model_name` parameter. It is used to instantiate the model class. The model class will be instantiated with the following parameters:

@@ -181,13 +181,7 @@ class SimpleSegmentor(L.LightningModule):
             return optimizer
 
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode="max",
-            factor=0.5,
-            patience=5,
-            threshold=0.005,
-            threshold_mode="abs",
-            min_lr=1e-6,
+            optimizer, **(self.lr_scheduler_kwargs or {})
         )
 
         return {
