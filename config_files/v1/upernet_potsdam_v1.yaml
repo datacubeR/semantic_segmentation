@@ -20,6 +20,16 @@ n_classes: &n_classes 6
 patch_size: 256
 overlap: 128
 
+use_scheduler: false
+scheduler_monitor: val_metrics/miou
+lr_scheduler_kwargs: 
+  mode: max
+  factor: 0.5
+  patience: 5
+  threshold: 0.005
+  threshold_mode: abs
+  min_lr: 1e-6
+
 loss_function: dice_loss ## cross_entropy, dice_loss, focal_loss, etc.
 loss_kwargs:
   mode: multiclass
